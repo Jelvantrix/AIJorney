@@ -1,0 +1,642 @@
+{
+  "summary": {
+    "timestamp": "2026-10-17T11:50:40.456Z",
+    "totalCases": 40,
+    "byLens": {
+      "Engineering": {
+        "count": 8,
+        "correct": 4,
+        "accuracy": 50
+      },
+      "Design": {
+        "count": 8,
+        "correct": 6,
+        "accuracy": 75
+      },
+      "Research": {
+        "count": 8,
+        "correct": 1,
+        "accuracy": 12.5
+      },
+      "Reasoning": {
+        "count": 8,
+        "correct": 2,
+        "accuracy": 25
+      },
+      "Writing": {
+        "count": 8,
+        "correct": 5,
+        "accuracy": 62.5
+      }
+    },
+    "routingAccuracyLlm": 45,
+    "routingAccuracyPreRouter": 82.5,
+    "constitutionComplianceRate": 0,
+    "latencyP50Ms": 200,
+    "latencyP95Ms": 7998,
+    "thresholdsPassed": false,
+    "decisionRuleStatus": "One or more specialists regressed below threshold; review prompts."
+  },
+  "results": [
+    {
+      "id": "eng_01",
+      "input": "How do I implement an in-memory token bucket rate limiter in TypeScript with window refill?",
+      "expected_lens": "Engineering",
+      "pre_router_lens": "Engineering",
+      "llm_router_lens": "Design",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"morphe\" in handoff note"
+      ],
+      "tokens_approx": 88,
+      "latency_ms": 302
+    },
+    {
+      "id": "eng_02",
+      "input": "Write a concurrent worker pool in Go that processes tasks with bounded goroutines.",
+      "expected_lens": "Engineering",
+      "pre_router_lens": "Engineering",
+      "llm_router_lens": "Writing",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"rhetor\" in handoff note"
+      ],
+      "tokens_approx": 86,
+      "latency_ms": 8589
+    },
+    {
+      "id": "eng_03",
+      "input": "Debug this error: TypeError: Cannot read properties of undefined (reading 'map') in React component.",
+      "expected_lens": "Engineering",
+      "pre_router_lens": "Engineering",
+      "llm_router_lens": "Engineering",
+      "routing_match": true,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 90,
+      "latency_ms": 207
+    },
+    {
+      "id": "eng_04",
+      "input": "Implement an LRU cache in Python with O(1) get and put operations using an OrderedDict or doubly linked list.",
+      "expected_lens": "Engineering",
+      "pre_router_lens": "Engineering",
+      "llm_router_lens": "Engineering",
+      "routing_match": true,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 92,
+      "latency_ms": 7998
+    },
+    {
+      "id": "eng_05",
+      "input": "How do I configure nginx to handle WebSocket upgrades with SSL termination and keepalive timeouts?",
+      "expected_lens": "Engineering",
+      "pre_router_lens": "Engineering",
+      "llm_router_lens": "Engineering",
+      "routing_match": true,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 90,
+      "latency_ms": 244
+    },
+    {
+      "id": "eng_06",
+      "input": "Write a robust SQL migration script in PostgreSQL to add a non-null column with a default value without locking large tables.",
+      "expected_lens": "Engineering",
+      "pre_router_lens": "Engineering",
+      "llm_router_lens": "Writing",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"rhetor\" in handoff note"
+      ],
+      "tokens_approx": 96,
+      "latency_ms": 194
+    },
+    {
+      "id": "eng_07",
+      "input": "Explain how to prevent race conditions in distributed systems using optimistic concurrency control with ETags.",
+      "expected_lens": "Engineering",
+      "pre_router_lens": null,
+      "llm_router_lens": "Engineering",
+      "routing_match": true,
+      "pre_router_match": false,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 93,
+      "latency_ms": 200
+    },
+    {
+      "id": "eng_08",
+      "input": "Write a Node.js stream pipeline that decompresses a gzip file and streams line-by-line JSON parsing with backpressure.",
+      "expected_lens": "Engineering",
+      "pre_router_lens": "Engineering",
+      "llm_router_lens": "Writing",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"rhetor\" in handoff note"
+      ],
+      "tokens_approx": 95,
+      "latency_ms": 204
+    },
+    {
+      "id": "des_01",
+      "input": "Design a minimal segmented tab bar using the Noevix design tokens with dark mode styling.",
+      "expected_lens": "Design",
+      "pre_router_lens": "Design",
+      "llm_router_lens": "Design",
+      "routing_match": true,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"morphe\" in handoff note"
+      ],
+      "tokens_approx": 87,
+      "latency_ms": 7417
+    },
+    {
+      "id": "des_02",
+      "input": "Spec an accessible modal dialog in Tailwind CSS with keyboard focus trapping and backdrop styling.",
+      "expected_lens": "Design",
+      "pre_router_lens": "Design",
+      "llm_router_lens": "Engineering",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 90,
+      "latency_ms": 220
+    },
+    {
+      "id": "des_03",
+      "input": "How should we design a high-density metric card for developer telemetry with jitter-free numbers?",
+      "expected_lens": "Design",
+      "pre_router_lens": null,
+      "llm_router_lens": "Design",
+      "routing_match": true,
+      "pre_router_match": false,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"morphe\" in handoff note"
+      ],
+      "tokens_approx": 89,
+      "latency_ms": 202
+    },
+    {
+      "id": "des_04",
+      "input": "Provide a layout hierarchy and token palette for a technical documentation sidebar navigation.",
+      "expected_lens": "Design",
+      "pre_router_lens": "Design",
+      "llm_router_lens": "Design",
+      "routing_match": true,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"morphe\" in handoff note"
+      ],
+      "tokens_approx": 89,
+      "latency_ms": 175
+    },
+    {
+      "id": "des_05",
+      "input": "Create an empty state illustration specification for when no search results are found.",
+      "expected_lens": "Design",
+      "pre_router_lens": "Design",
+      "llm_router_lens": "Engineering",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 87,
+      "latency_ms": 187
+    },
+    {
+      "id": "des_06",
+      "input": "What are the contrast requirements for dark mode surfaces under WCAG 2.2 AA?",
+      "expected_lens": "Design",
+      "pre_router_lens": "Design",
+      "llm_router_lens": "Design",
+      "routing_match": true,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"morphe\" in handoff note"
+      ],
+      "tokens_approx": 84,
+      "latency_ms": 174
+    },
+    {
+      "id": "des_07",
+      "input": "Design a command palette (Cmd+K) interface layout with keyboard shortcut hints.",
+      "expected_lens": "Design",
+      "pre_router_lens": "Engineering",
+      "llm_router_lens": "Design",
+      "routing_match": true,
+      "pre_router_match": false,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"morphe\" in handoff note"
+      ],
+      "tokens_approx": 85,
+      "latency_ms": 183
+    },
+    {
+      "id": "des_08",
+      "input": "Critique this UI: it uses purple gradient cards with pill badges and glowing borders.",
+      "expected_lens": "Design",
+      "pre_router_lens": "Design",
+      "llm_router_lens": "Design",
+      "routing_match": true,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"morphe\" in handoff note"
+      ],
+      "tokens_approx": 86,
+      "latency_ms": 179
+    },
+    {
+      "id": "res_01",
+      "input": "What does empirical literature say about the throughput benefits of PagedAttention vs standard vLLM attention?",
+      "expected_lens": "Research",
+      "pre_router_lens": "Research",
+      "llm_router_lens": "Engineering",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 93,
+      "latency_ms": 189
+    },
+    {
+      "id": "res_02",
+      "input": "Compare speculative decoding vs prompt lookup decoding: what are the empirical latency reductions?",
+      "expected_lens": "Research",
+      "pre_router_lens": "Research",
+      "llm_router_lens": "Engineering",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 90,
+      "latency_ms": 174
+    },
+    {
+      "id": "res_03",
+      "input": "What is the current state of empirical research on transformer KV-cache quantization (FP8 vs INT4)?",
+      "expected_lens": "Research",
+      "pre_router_lens": "Research",
+      "llm_router_lens": "Research",
+      "routing_match": true,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"gnosis\" in handoff note"
+      ],
+      "tokens_approx": 90,
+      "latency_ms": 193
+    },
+    {
+      "id": "res_04",
+      "input": "Summarize the verified security vulnerabilities in JSON Web Token (JWT) implementations.",
+      "expected_lens": "Research",
+      "pre_router_lens": "Research",
+      "llm_router_lens": "Design",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"morphe\" in handoff note"
+      ],
+      "tokens_approx": 87,
+      "latency_ms": 196
+    },
+    {
+      "id": "res_05",
+      "input": "What is the peer-reviewed consensus on sleep fragmentation and cognitive recovery in adults?",
+      "expected_lens": "Research",
+      "pre_router_lens": "Research",
+      "llm_router_lens": "Engineering",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 88,
+      "latency_ms": 2460
+    },
+    {
+      "id": "res_06",
+      "input": "Trace the historical evolution of raft consensus vs paxos in production database systems.",
+      "expected_lens": "Research",
+      "pre_router_lens": "Research",
+      "llm_router_lens": "Engineering",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 87,
+      "latency_ms": 246
+    },
+    {
+      "id": "res_07",
+      "input": "What are the empirical limitations of Retrieval-Augmented Generation (RAG) when document context exceeds 32k tokens?",
+      "expected_lens": "Research",
+      "pre_router_lens": "Research",
+      "llm_router_lens": "Design",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"morphe\" in handoff note"
+      ],
+      "tokens_approx": 94,
+      "latency_ms": 206
+    },
+    {
+      "id": "res_08",
+      "input": "Compare the energy efficiency of GPU inference (H100 vs L40S) for 70B parameter models.",
+      "expected_lens": "Research",
+      "pre_router_lens": "Research",
+      "llm_router_lens": "Engineering",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 87,
+      "latency_ms": 178
+    },
+    {
+      "id": "rea_01",
+      "input": "We have 5,000 writes/sec and 50,000 reads/sec with a 2TB database. Should we shard or scale read replicas?",
+      "expected_lens": "Reasoning",
+      "pre_router_lens": "Reasoning",
+      "llm_router_lens": "Reasoning",
+      "routing_match": true,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"logos\" in handoff note"
+      ],
+      "tokens_approx": 92,
+      "latency_ms": 213
+    },
+    {
+      "id": "rea_02",
+      "input": "Solve for x: 3^(2x - 1) = 27^(x + 2). Show minimal algebraic steps.",
+      "expected_lens": "Reasoning",
+      "pre_router_lens": "Reasoning",
+      "llm_router_lens": "Engineering",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 82,
+      "latency_ms": 196
+    },
+    {
+      "id": "rea_03",
+      "input": "Evaluate the trade-offs between monolithic repository vs multi-repo for a 50-engineer team.",
+      "expected_lens": "Reasoning",
+      "pre_router_lens": "Reasoning",
+      "llm_router_lens": "Reasoning",
+      "routing_match": true,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"logos\" in handoff note"
+      ],
+      "tokens_approx": 88,
+      "latency_ms": 206
+    },
+    {
+      "id": "rea_04",
+      "input": "A server has 99.9% uptime. If we put two identical servers in parallel active-passive configuration, what is the theoretical uptime?",
+      "expected_lens": "Reasoning",
+      "pre_router_lens": "Reasoning",
+      "llm_router_lens": "Engineering",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 98,
+      "latency_ms": 194
+    },
+    {
+      "id": "rea_05",
+      "input": "Should an early-stage startup choose DynamoDB or PostgreSQL for their primary application database?",
+      "expected_lens": "Reasoning",
+      "pre_router_lens": "Reasoning",
+      "llm_router_lens": "Engineering",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 90,
+      "latency_ms": 197
+    },
+    {
+      "id": "rea_06",
+      "input": "Prove that the square root of 2 is irrational using contradiction.",
+      "expected_lens": "Reasoning",
+      "pre_router_lens": "Reasoning",
+      "llm_router_lens": "Engineering",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 82,
+      "latency_ms": 198
+    },
+    {
+      "id": "rea_07",
+      "input": "Analyze whether to cache embeddings client-side in IndexedDB vs querying a server-side vector cache.",
+      "expected_lens": "Reasoning",
+      "pre_router_lens": null,
+      "llm_router_lens": "Engineering",
+      "routing_match": false,
+      "pre_router_match": false,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 90,
+      "latency_ms": 216
+    },
+    {
+      "id": "rea_08",
+      "input": "Derive the time complexity of building a binary heap from an unordered array of N elements.",
+      "expected_lens": "Reasoning",
+      "pre_router_lens": "Reasoning",
+      "llm_router_lens": "Design",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"morphe\" in handoff note"
+      ],
+      "tokens_approx": 88,
+      "latency_ms": 187
+    },
+    {
+      "id": "wri_01",
+      "input": "Write a 3-paragraph executive post-mortem memo for a 42-minute API outage caused by database connection starvation.",
+      "expected_lens": "Writing",
+      "pre_router_lens": "Writing",
+      "llm_router_lens": "Writing",
+      "routing_match": true,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"rhetor\" in handoff note"
+      ],
+      "tokens_approx": 94,
+      "latency_ms": 3377
+    },
+    {
+      "id": "wri_02",
+      "input": "Rewrite this email to make it concise and direct: 'Hey team, I was just wondering if anyone had a chance to look at the PR I sent over yesterday because it would really help us move forward.'",
+      "expected_lens": "Writing",
+      "pre_router_lens": "Writing",
+      "llm_router_lens": "Writing",
+      "routing_match": true,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"rhetor\" in handoff note"
+      ],
+      "tokens_approx": 113,
+      "latency_ms": 218
+    },
+    {
+      "id": "wri_03",
+      "input": "Write an announcement to customers that we are deprecating v1 of our public API in 90 days.",
+      "expected_lens": "Writing",
+      "pre_router_lens": "Writing",
+      "llm_router_lens": "Writing",
+      "routing_match": true,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"rhetor\" in handoff note"
+      ],
+      "tokens_approx": 88,
+      "latency_ms": 177
+    },
+    {
+      "id": "wri_04",
+      "input": "Draft a pull request description template for our engineering organization.",
+      "expected_lens": "Writing",
+      "pre_router_lens": null,
+      "llm_router_lens": "Engineering",
+      "routing_match": false,
+      "pre_router_match": false,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 84,
+      "latency_ms": 196
+    },
+    {
+      "id": "wri_05",
+      "input": "Write a succinct elevator pitch (under 75 words) explaining Noevix to an enterprise engineering leader.",
+      "expected_lens": "Writing",
+      "pre_router_lens": null,
+      "llm_router_lens": "Writing",
+      "routing_match": true,
+      "pre_router_match": false,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"rhetor\" in handoff note"
+      ],
+      "tokens_approx": 91,
+      "latency_ms": 205
+    },
+    {
+      "id": "wri_06",
+      "input": "Edit this paragraph to remove passive voice and corporate buzzwords: 'Synergistic solutions were leveraged by the cross-functional team.'",
+      "expected_lens": "Writing",
+      "pre_router_lens": "Writing",
+      "llm_router_lens": "Engineering",
+      "routing_match": false,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 99,
+      "latency_ms": 210
+    },
+    {
+      "id": "wri_07",
+      "input": "Write a gentle but firm response to a vendor requesting an immediate renewal invoice before budget approval.",
+      "expected_lens": "Writing",
+      "pre_router_lens": "Writing",
+      "llm_router_lens": "Writing",
+      "routing_match": true,
+      "pre_router_match": true,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"rhetor\" in handoff note"
+      ],
+      "tokens_approx": 92,
+      "latency_ms": 198
+    },
+    {
+      "id": "wri_08",
+      "input": "Draft a one-page README section on error handling conventions for a microservices SDK.",
+      "expected_lens": "Writing",
+      "pre_router_lens": null,
+      "llm_router_lens": "Engineering",
+      "routing_match": false,
+      "pre_router_match": false,
+      "constitution_compliance": false,
+      "compliance_violations": [
+        "Forbidden term \"techne\" in handoff note"
+      ],
+      "tokens_approx": 87,
+      "latency_ms": 179
+    }
+  ]
+}

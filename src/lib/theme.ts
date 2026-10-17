@@ -1,0 +1,34 @@
+export type Theme = 'dark' | 'light' | 'system';
+
+const STORAGE_KEY = 'noevix-theme';
+
+export function getStoredTheme(): Theme {
+  if (typeof window === 'undefined') return 'system';
+  try {
+    const val = localStorage.getItem(STORAGE_KEY);
+    if (val === 'dark' || val === 'light' || val === 'system') {
+      return val;
+    }
+  } catch {}
+  return 'system';
+}
+
+export function applyTheme(theme: Theme) {
+  if (typeof window === 'undefined') return;
+  const isDark =
+    theme === 'dark' ||
+    (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  if (isDark) {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+}
+
+export function setStoredTheme(theme: Theme) {
+  try {
+    localStorage.setItem(STORAGE_KEY, theme);
+  } catch {}
+  applyTheme(theme);
+}

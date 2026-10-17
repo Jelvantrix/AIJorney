@@ -1,0 +1,6 @@
+{
+  "name": "Noevix - Orchestrated AI Intelligence",
+  "description": "Unified ultra-fast AI intelligence powered by an adaptive routing architecture and role-specialist synthesis behind a single voice.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

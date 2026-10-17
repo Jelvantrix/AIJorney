@@ -1,0 +1,87 @@
+:root {
+  /* Light Theme Defaults - Crisp Luxury Crystalline */
+  --bg: #F8F9FA;
+  --bg-subtle: #F0F2F5;
+  --sidebar: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-hover: #F2F4F7;
+  --surface-active: #E9ECEF;
+  --user-bubble: #FFFFFF;
+  --border: #E5E7EB;
+  --border-light: rgba(0, 0, 0, 0.06);
+  --text: #111827;
+  --text-secondary: #4B5563;
+  --muted: #6B7280;
+  
+  /* Aura tokens (Dynamic themes) */
+  --accent: #E11D48;
+  --accent-text: #BE123C;
+  --aura-1: rgba(225, 29, 72, 0.12);
+  --aura-2: rgba(139, 92, 246, 0.10);
+  --aura-3: rgba(14, 165, 233, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glow-shadow: 0 0 40px -10px rgba(225, 29, 72, 0.25);
+}
+
+html.dark {
+  /* Dark Theme - Deep Space Obsidian with Radiant Aura */
+  --bg: #090A0F;
+  --bg-subtle: #0E1017;
+  --sidebar: #0C0D14;
+  --surface: #141622;
+  --surface-hover: #1C1F2E;
+  --surface-active: #24283B;
+  --user-bubble: #171926;
+  --border: #212538;
+  --border-light: rgba(255, 255, 255, 0.08);
+  --text: #F3F4F6;
+  --text-secondary: #9CA3AF;
+  --muted: #6B7280;
+  
+  /* Aura tokens */
+  --accent: #FF2E8A;
+  --accent-text: #FF2E8A;
+  --aura-1: rgba(255, 46, 138, 0.18);
+  --aura-2: rgba(139, 92, 246, 0.16);
+  --aura-3: rgba(56, 189, 248, 0.12);
+  --glass-bg: rgba(18, 20, 32, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --glow-shadow: 0 0 50px -5px rgba(255, 46, 138, 0.35);
+}
+
+/* Aura Themes */
+[data-aura="cosmic"] {
+  --aura-1: rgba(255, 46, 138, 0.22);
+  --aura-2: rgba(139, 92, 246, 0.20);
+  --aura-3: rgba(79, 70, 229, 0.15);
+  --accent: #FF2E8A;
+}
+
+[data-aura="cyber"] {
+  --aura-1: rgba(6, 182, 212, 0.24);
+  --aura-2: rgba(59, 130, 246, 0.20);
+  --aura-3: rgba(147, 51, 234, 0.15);
+  --accent: #06B6D4;
+}
+
+[data-aura="emerald"] {
+  --aura-1: rgba(16, 185, 129, 0.22);
+  --aura-2: rgba(20, 184, 166, 0.18);
+  --aura-3: rgba(59, 130, 246, 0.12);
+  --accent: #10B981;
+}
+
+[data-aura="solar"] {
+  --aura-1: rgba(245, 158, 11, 0.24);
+  --aura-2: rgba(239, 68, 68, 0.18);
+  --aura-3: rgba(217, 70, 239, 0.14);
+  --accent: #F59E0B;
+}
+
+[data-aura="minimal"] {
+  --aura-1: rgba(255, 255, 255, 0.06);
+  --aura-2: rgba(255, 255, 255, 0.04);
+  --aura-3: rgba(255, 255, 255, 0.02);
+  --accent: #A855F7;
+}

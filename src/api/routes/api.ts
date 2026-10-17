@@ -67,26 +67,46 @@ apiRouter.post('/chat', async (req: Request, res: Response) => {
   }
 });
 
-// GET /v1/conversations
-apiRouter.get('/conversations', (_req: Request, res: Response) => {
+// GET /v1/conversations (and /spaces)
+apiRouter.get(['/conversations', '/spaces'], (_req: Request, res: Response) => {
   const convs = Store.getConversations();
-  res.json({ conversations: convs });
+  res.json({ conversations: convs, spaces: convs });
 });
 
-// GET /v1/conversations/:id (tree)
-apiRouter.get('/conversations/:id', (req: Request, res: Response) => {
+// GET /v1/conversations/:id (and /spaces/:id)
+apiRouter.get(['/conversations/:id', '/spaces/:id'], (req: Request, res: Response) => {
   const conv = Store.getConversation(req.params.id);
   if (!conv) {
-    return res.status(404).json({ error: 'CONVERSATION_NOT_FOUND' });
+    return res.status(404).json({ error: 'SPACE_NOT_FOUND' });
   }
   const messages = Store.getMessagesByConversation(req.params.id);
-  res.json({ conversation: conv, messages });
+  res.json({ space: conv, conversation: conv, messages });
 });
 
-// DELETE /v1/conversations/:id
-apiRouter.delete('/conversations/:id', (req: Request, res: Response) => {
+// DELETE /v1/conversations/:id (and /spaces/:id)
+apiRouter.delete(['/conversations/:id', '/spaces/:id'], (req: Request, res: Response) => {
   const ok = Store.deleteConversation(req.params.id);
   res.json({ success: ok });
+});
+
+// GET /v1/export/:id (Markdown export)
+apiRouter.get('/export/:id', (req: Request, res: Response) => {
+  const conv = Store.getConversation(req.params.id);
+  if (!conv) {
+    return res.status(404).json({ error: 'SPACE_NOT_FOUND' });
+  }
+  const messages = Store.getMessagesByConversation(req.params.id);
+  let md = `# ${conv.title}\n*Exported from Noevix on ${new Date().toISOString()}*\n\n---\n\n`;
+  for (const m of messages) {
+    if (m.role === 'user') {
+      md += `## ${m.content}\n\n`;
+    } else {
+      md += `${m.content}\n\n*Lens: ${m.lens || 'Reasoning'}*\n\n---\n\n`;
+    }
+  }
+  res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="noevix-space-${conv.id}.md"`);
+  res.send(md);
 });
 
 // POST /v1/messages/:id/regenerate

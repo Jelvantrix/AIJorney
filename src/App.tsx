@@ -1,67 +1,183 @@
 import React, { useEffect } from 'react';
-import { Sidebar } from './components/Sidebar.tsx';
-import { ChatHeader } from './components/ChatHeader.tsx';
-import { MessageList } from './components/MessageList.tsx';
-import { EmptyState } from './components/EmptyState.tsx';
-import { Composer } from './components/Composer.tsx';
-import { CommandPalette } from './components/CommandPalette.tsx';
 import { useChatStore } from './lib/store.ts';
 import { applyTheme, getStoredTheme } from './lib/theme.ts';
-import { PanelLeftOpen } from 'lucide-react';
+import { Aura } from './components/aura/Aura.tsx';
+import { TopBar } from './components/editorial/TopBar.tsx';
+import { Stage } from './components/editorial/Stage.tsx';
+import { Dock } from './components/editorial/Dock.tsx';
+import { TimelineRail } from './components/editorial/TimelineRail.tsx';
+import { IndexOverlay } from './components/editorial/IndexOverlay.tsx';
+import { ArtifactSheet } from './components/editorial/ArtifactSheet.tsx';
+import { OnboardingModal } from './components/editorial/OnboardingModal.tsx';
+import { AuthModal } from './components/editorial/AuthModal.tsx';
+import { SpacesMenu } from './components/editorial/SpacesMenu.tsx';
+import { SettingsModal } from './components/editorial/SettingsModal.tsx';
+import { MarketingPage } from './components/marketing/MarketingPage.tsx';
+import { AuraLab } from './components/lab/AuraLab.tsx';
 
 export default function App() {
-  const { activeId, messages, isSidebarOpen, toggleSidebar } = useChatStore();
-
-  const activeMessages = (activeId && messages[activeId]) || [];
-  const isEmpty = activeMessages.length === 0;
+  const {
+    currentView,
+    setIndexOpen,
+    isIndexOpen,
+    isSpacesMenuOpen,
+    setSpacesMenuOpen,
+    isSettingsOpen,
+    setSettingsOpen,
+    isArtifactSheetOpen,
+    setArtifactSheetOpen,
+    isLensMenuOpen,
+    setLensMenuOpen,
+    isAuthModalOpen,
+    setAuthModalOpen,
+    isStreaming,
+    stopStreaming,
+    activeExchangeIndex,
+    setActiveExchangeIndex,
+    activeId,
+    messages,
+  } = useChatStore();
 
   useEffect(() => {
     applyTheme(getStoredTheme());
   }, []);
 
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is currently typing in an input or textarea
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      const isInput = targetTag === 'input' || targetTag === 'textarea';
+
+      // ⌘K or Ctrl+K: Index Overlay
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIndexOpen(!isIndexOpen);
+        return;
+      }
+
+      // ⌘/ or Ctrl+/: Lens Menu
+      if ((e.metaKey || e.ctrlKey) && e.key === '/') {
+        e.preventDefault();
+        setLensMenuOpen(!isLensMenuOpen);
+        return;
+      }
+
+      // Escape key behavior
+      if (e.key === 'Escape') {
+        if (isStreaming) {
+          stopStreaming();
+          return;
+        }
+        if (isSpacesMenuOpen) {
+          setSpacesMenuOpen(false);
+          return;
+        }
+        if (isSettingsOpen) {
+          setSettingsOpen(false);
+          return;
+        }
+        if (isIndexOpen) {
+          setIndexOpen(false);
+          return;
+        }
+        if (isArtifactSheetOpen) {
+          setArtifactSheetOpen(false);
+          return;
+        }
+        if (isLensMenuOpen) {
+          setLensMenuOpen(false);
+          return;
+        }
+        if (isAuthModalOpen) {
+          setAuthModalOpen(false);
+          return;
+        }
+      }
+
+      // J / K keyboard navigation between exchanges when not focused in input
+      if (!isInput && !isIndexOpen && !isArtifactSheetOpen) {
+        const activeMessages = (activeId && messages[activeId]) || [];
+        const userCount = activeMessages.filter((m) => m.role === 'user').length;
+
+        if (e.key.toLowerCase() === 'j') {
+          // Down / next exchange
+          e.preventDefault();
+          const next = Math.min(activeExchangeIndex + 1, Math.max(0, userCount - 1));
+          setActiveExchangeIndex(next);
+          document.getElementById(`exchange-${next}`)?.scrollIntoView({ behavior: 'smooth' });
+        } else if (e.key.toLowerCase() === 'k' && !(e.metaKey || e.ctrlKey)) {
+          // Up / prev exchange
+          e.preventDefault();
+          const prev = Math.max(0, activeExchangeIndex - 1);
+          setActiveExchangeIndex(prev);
+          document.getElementById(`exchange-${prev}`)?.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [
+    isIndexOpen,
+    isSpacesMenuOpen,
+    isSettingsOpen,
+    isArtifactSheetOpen,
+    isLensMenuOpen,
+    isAuthModalOpen,
+    isStreaming,
+    activeExchangeIndex,
+    activeId,
+    messages,
+  ]);
+
+  // Route to Marketing Page
+  if (currentView === 'marketing') {
+    return <MarketingPage />;
+  }
+
+  // Route to Aura Lab
+  if (currentView === 'lab') {
+    return <AuraLab />;
+  }
+
+  // Core App Shell: Four elements, no sidebar
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[var(--bg)] text-[var(--text)]">
-      {/* Region 1: Sidebar (260px, collapsible) */}
-      <Sidebar onOpenCommandPalette={() => useChatStore.getState().setCommandPaletteOpen(true)} />
+    <div className="relative min-h-screen w-screen overflow-hidden bg-[var(--bg)] text-[var(--text)] flex flex-col font-sans select-none">
+      {/* 0) Reactive Monochrome Aura */}
+      <Aura />
 
-      {/* Region 2: Main Area */}
-      <main className="relative flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[var(--bg)]">
-        {/* Floating reopen sidebar button on desktop when sidebar is closed */}
-        {!isSidebarOpen && (
-          <button
-            onClick={toggleSidebar}
-            className="hidden md:flex absolute top-[10px] left-[12px] z-30 w-[32px] h-[32px] items-center justify-center rounded-[6px] text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface)] border border-[var(--border)] transition-colors duration-150"
-            title="Open sidebar (Ctrl+B)"
-          >
-            <PanelLeftOpen className="w-4 h-4" />
-          </button>
-        )}
+      {/* 1) Top Bar (48px, transparent, fades in on hover) */}
+      <TopBar />
 
-        {/* 52px Header */}
-        <ChatHeader />
-
-        {/* Conversation Column (max-width 768px, centered) */}
-        {isEmpty ? (
-          <EmptyState />
-        ) : (
-          <div className="relative flex-1 flex flex-col min-h-0">
-            <MessageList />
-
-            {/* Pinned Bottom Composer with 24px soft fade mask */}
-            <div className="absolute bottom-0 inset-x-0 z-10 pointer-events-none">
-              {/* 24px tall gradient fade mask */}
-              <div className="h-[24px] w-full composer-fade-mask" />
-              {/* Floating composer container */}
-              <div className="bg-[var(--bg)] pb-6 pt-1 pointer-events-auto">
-                <Composer />
-              </div>
-            </div>
-          </div>
-        )}
+      {/* 2) The Stage (Editorial document conversation) */}
+      <main className="relative z-10 flex-1 flex flex-col min-h-0 overflow-hidden">
+        <Stage />
       </main>
 
-      {/* Command Palette (Cmd+K) */}
-      <CommandPalette />
+      {/* 3) The Dock (Composer floating at bottom center) */}
+      <Dock />
+
+      {/* 4) The Timeline Rail (24px right strip with ticks) */}
+      <TimelineRail />
+
+      {/* Index Overlay (⌘K) */}
+      <IndexOverlay />
+
+      {/* Spaces & Chats Drawer Menu */}
+      <SpacesMenu />
+
+      {/* Settings & Preferences Modal (Lists, Paragraphs, Code theme) */}
+      <SettingsModal />
+
+      {/* Artifacts Sheet */}
+      <ArtifactSheet />
+
+      {/* Onboarding Modal */}
+      <OnboardingModal />
+
+      {/* Auth Modal */}
+      <AuthModal />
     </div>
   );
 }

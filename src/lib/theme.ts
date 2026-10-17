@@ -32,3 +32,12 @@ export function setStoredTheme(theme: Theme) {
   } catch {}
   applyTheme(theme);
 }
+
+export function toggleTheme() {
+  const current = getStoredTheme();
+  const isDark =
+    current === 'dark' ||
+    (current === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const next: Theme = isDark ? 'light' : 'dark';
+  setStoredTheme(next);
+}

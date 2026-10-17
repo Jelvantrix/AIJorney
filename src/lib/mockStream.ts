@@ -8,72 +8,82 @@ const RESPONSE_TEMPLATES: Array<{
   response: string;
 }> = [
   {
-    match: /(code|implement|function|algorithm|typescript|python|react|hook|bug|error|refactor)/i,
-    response: `Here is an implementation of a token bucket rate limiter in TypeScript. It tracks replenishments with millisecond precision without requiring a background timer interval.
+    match: /(code|implement|function|algorithm|typescript|python|react|hook|bug|error|refactor|rust)/i,
+    response: `Here is a high-performance in-memory ring buffer implementation designed for lock-free single-producer single-consumer concurrency.
 
 \`\`\`typescript
-export interface TokenBucketOptions {
-  capacity: number;       // Maximum burst tokens
-  refillRatePerSec: number; // Tokens added per second
+export interface RingBufferOptions {
+  capacity: number; // Must be power of two
 }
 
-export class TokenBucket {
-  private capacity: number;
-  private tokens: number;
-  private refillRate: number;
-  private lastRefill: number;
+export class RingBuffer<T> {
+  private readonly buffer: Array<T | undefined>;
+  private readonly mask: number;
+  private head = 0;
+  private tail = 0;
 
-  constructor(options: TokenBucketOptions) {
-    this.capacity = options.capacity;
-    this.tokens = options.capacity;
-    this.refillRate = options.refillRatePerSec;
-    this.lastRefill = Date.now();
-  }
-
-  public consume(tokensRequested = 1): boolean {
-    this.refill();
-
-    if (this.tokens >= tokensRequested) {
-      this.tokens -= tokensRequested;
-      return true;
+  constructor(options: RingBufferOptions) {
+    if ((options.capacity & (options.capacity - 1)) !== 0) {
+      throw new Error("Capacity must be a power of two");
     }
-
-    return false;
+    this.buffer = new Array(options.capacity);
+    this.mask = options.capacity - 1;
   }
 
-  public getRemainingTokens(): number {
-    this.refill();
-    return Math.floor(this.tokens);
+  public push(item: T): boolean {
+    if (this.head - this.tail >= this.buffer.length) {
+      return false; // Full
+    }
+    this.buffer[this.head & this.mask] = item;
+    this.head++;
+    return true;
   }
 
-  private refill(): void {
-    const now = Date.now();
-    const elapsedSeconds = (now - this.lastRefill) / 1000;
-    this.tokens = Math.min(this.capacity, this.tokens + elapsedSeconds * this.refillRate);
-    this.lastRefill = now;
+  public pop(): T | undefined {
+    if (this.tail === this.head) {
+      return undefined; // Empty
+    }
+    const idx = this.tail & this.mask;
+    const item = this.buffer[idx];
+    this.buffer[idx] = undefined;
+    this.tail++;
+    return item;
+  }
+
+  public size(): number {
+    return this.head - this.tail;
   }
 }
 \`\`\`
 
-### Key Considerations
-1. **Memory efficiency**: Each instance only holds four numeric properties.
-2. **Monotonic drift**: Calculations compute elapsed delta on demand, preventing timer pileup during idle periods.
-3. **Cluster scaling**: For distributed workloads across multiple nodes, sync state with Redis via atomic Lua scripts.`,
+### Invariants
+1. **Bitwise Masking**: Modulo arithmetic is replaced with \`& this.mask\`.
+2. **Zero Allocation**: Buffer elements are reused continually without GC pressure.
+3. **Monotonic Pointers**: Cursors increment monotonically avoiding wrap-around branch costs.`,
   },
   {
     match: /(table|compare|comparison|vs|difference|trade-off|database|postgres|dynamo)/i,
-    response: `When deciding between relational and document databases for transactional workloads, the primary criteria are schema predictability, join complexity, and scale inflection points.
+    response: `A comparative evaluation of persistence engines for high-concurrency event-driven architectures:
 
-| Dimension | PostgreSQL | DynamoDB | SQLite |
+| Parameter | PostgreSQL | Apache Cassandra | Amazon DynamoDB |
 | :--- | :--- | :--- | :--- |
-| **Data Model** | Relational / Strict Schema | Document / Key-Value | Embedded Relational |
-| **ACID Guarantees** | Full across arbitrary joins | Single-item / Opt-in multi-table | Full on single writer |
-| **Scaling Profile** | Vertical first, read replicas | Near-infinite horizontal partitions | Single node / Embedded |
-| **Operational Overhead** | Connection pooling, vacuuming | Fully managed AWS native | Zero administration |
-| **Cost at Low Volume** | Fixed instance cost | Pay-per-request free tier | Local zero cost |
+| **Transaction Boundary** | ACID across arbitrary foreign keys | Partition-isolated lightweight transactions | Single-partition ACID / TransactItems |
+| **Indexing Model** | B-Tree, GIN, BRIN, Partial, Vector | Partition Key + Clustering Key only | Hash Primary Key + Global Secondary Indexes |
+| **Horizontal Partitioning** | Citus extension / Declarative Partitioning | Consistent Hash Ring with Virtual Nodes | Managed Partition Router with auto-splits |
+| **Storage Engine** | Heap pages with VACUUM MVCC | Log-Structured Merge (LSM) Trees | Proprietary SSD B-Tree log architecture |
+| **Operational Effort** | Connection pooling (PgBouncer) | Compaction tuning & repair routines | Fully managed serverless AWS cloud |
 
-### Recommendation
-For early-to-mid stage web applications, PostgreSQL remains the most flexible choice. Introduce DynamoDB or ScyllaDB only when horizontal write volume surpasses the single primary throughput ceiling (typically 15,000+ writes/second on modern NVMe drives).`,
+### Synthesis
+Start with PostgreSQL for general domain models. Migrate high-throughput append-only streams to an LSM-tree based engine only when write volume exceeds single-node SSD IOPS limits.`,
+  },
+  {
+    match: /(design|aura|monochrome|editorial|typography|light in a dark room)/i,
+    response: `The "Light in a dark room" constitution establishes an editorial instrument where illumination is the singular decorative element.
+
+### Architectural Tenets
+1. **Absolute Zero Saturation**: Color is not an aesthetic dial; it is eliminated. Luminance contrast alone defines hierarchy.
+2. **The Reactive Aura**: A GPU-accelerated atmospheric bloom that pulses with system energy: breathing when idle, heating during token synthesis, decaying upon resolution.
+3. **Typography as Structure**: Large Instrument Serif headlines convey human intent; crisp Geist sans conveys machine precision; Geist Mono encodes metadata.`,
   },
   {
     match: /(explain|concept|how does|what is|how do)/i,
@@ -85,49 +95,54 @@ For early-to-mid stage web applications, PostgreSQL remains the most flexible ch
 
 In language model serving (speculative decoding), a lightweight draft model generates candidate tokens in parallel batches, which a larger target model verifies in a single forward pass, typically cutting perceived latency by 40% to 60%.`,
   },
-  {
-    match: /(plan|email|draft|write|memo|project)/i,
-    response: `Here is a concise launch announcement ready to share with internal stakeholders:
-
-**Subject:** Noevix Core Deployment & Rollout Schedule
-
-Team,
-
-We are rolling out Noevix v1.0 across all staging environments today at 15:00 UTC, with production availability slated for Thursday.
-
-### What is changing:
-- **Perceived Latency**: Sub-300ms time-to-first-token via pre-warmed inference pipelines.
-- **Unified Interface**: Clean, content-first layout with zero visual clutter.
-- **Reliability**: Deterministic retry fallbacks and client-side draft preservation.
-
-Please report any unexpected behavior directly in the #product-releases channel. All metrics are live on our internal telemetry dashboard.`,
-  },
 ];
 
 export async function* streamMockResponse(
   userPrompt: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  forcedScenario?: string,
+  style?: 'paragraphs' | 'lists' | 'tables' | 'code_first'
 ): AsyncGenerator<string, void, unknown> {
-  // 1. Initial "thinking" delay (300ms - 700ms)
-  const initialDelay = 350 + Math.random() * 300;
+  // Scenario testing: Error immediately
+  if (forcedScenario === 'error') {
+    throw new Error('500: Specialist inference cluster unavailable');
+  }
+
+  // Scenario testing: Rate limit
+  if (forcedScenario === 'rate_limit') {
+    throw new Error('429: Rate limit exceeded. Retry after 20s');
+  }
+
+  // 1. Initial "thinking" delay
+  const isFast = forcedScenario === 'fast';
+  const isSlow = forcedScenario === 'slow';
+  const initialDelay = isFast ? 120 : isSlow ? 1800 : 380 + Math.random() * 250;
   await new Promise((resolve) => setTimeout(resolve, initialDelay));
 
   if (signal?.aborted) return;
 
-  // 2. Select response template
+  // 2. Select response template based on prompt and style preference
   let selected = RESPONSE_TEMPLATES.find((t) => t.match.test(userPrompt))?.response;
-  if (!selected) {
-    selected = `Here is a structured overview regarding your request:
 
-1. **First Principle**: State constraints and assumptions directly before choosing an approach.
-2. **Implementation**: Build minimal verifiable solutions with defensive boundary checks.
-3. **Iteration**: Profile latency and memory under realistic concurrency before optimizing prematurely.
-
-If you have specific criteria or code to review, paste it here and we can dissect the exact requirements.`;
+  if (selected) {
+    if (style === 'lists' && !selected.includes('- ')) {
+      selected = `Structured Invariants & Analysis:\n\n- ${selected.replace(/\n\n/g, '\n- ')}`;
+    } else if (style === 'paragraphs' && selected.includes('1. ') && !selected.includes('```')) {
+      selected = selected.replace(/\d+\.\s+\*\*(.*?)\*\*:\s*/g, '$1: ');
+    }
+  } else {
+    if (style === 'lists') {
+      selected = `Structured Breakdown & Invariants:\n\n- **Invariant Constraints**: Define formal mathematical boundary conditions prior to implementation.\n- **Execution Strategy**: Assemble a verifiable prototype with deterministic error boundaries and strict telemetry.\n- **Continuous Verification**: Validate p99 latency percentiles and edge failure modes under sustained throughput.\n- **Resource Footprint**: Keep memory allocation strictly O(1) in critical paths.\n- **Verification Test**: Execute load test harness and invariant checks.\n\nSpecify which subsystem parameter you wish to analyze further.`;
+    } else if (style === 'paragraphs') {
+      selected = `When approaching this system, the primary architectural imperative is to establish immutable boundary constraints before committing to implementation details. By clarifying memory guarantees and network fault models up front, the resulting subsystem avoids subtle concurrency regressions.\n\nA verifiable prototype should be constructed with deterministic error boundaries and continuous telemetry. Profiling latency percentiles under realistic load reveals memory bottlenecks early, ensuring that production throughput targets are met without premature complexity.`;
+    } else if (style === 'code_first') {
+      selected = `\`\`\`typescript\n// Immediate executable solution\nexport function verifyInvariant<T>(state: T, predicate: (s: T) => boolean): boolean {\n  if (!predicate(state)) {\n    throw new Error("State invariant violated");\n  }\n  return true;\n}\n\`\`\`\n\nThis pattern enforces preconditions synchronously before state transitions occur.`;
+    } else {
+      selected = `Structured Assessment:\n\n1. **First Principles**: Define invariant constraints and boundary conditions before architectural choices.\n2. **Execution Strategy**: Assemble a verifiable prototype with deterministic error boundaries and strict telemetry.\n3. **Continuous Verification**: Validate latency percentiles and edge failure modes under sustained throughput.\n\nSpecify which component you wish to inspect next.`;
+    }
   }
 
-  // 3. Break into tokens (words with punctuation attachment)
-  // Split preserving spaces and punctuation
+  // 3. Tokenize by words and punctuation
   const tokenRegex = /(\s+|[^\s\w]+|\w+)/g;
   const rawTokens: string[] = [];
   let m: RegExpExecArray | null;
@@ -135,22 +150,27 @@ If you have specific criteria or code to review, paste it here and we can dissec
     rawTokens.push(m[0]);
   }
 
+  const midPoint = Math.floor(rawTokens.length / 2);
+
   for (let i = 0; i < rawTokens.length; i++) {
     if (signal?.aborted) {
       return;
     }
 
+    // Mid-stream disconnect scenario test
+    if (forcedScenario === 'mid_stream_disconnect' && i >= midPoint) {
+      throw new Error('Connection reset by peer mid-stream');
+    }
+
     const token = rawTokens[i];
     yield token;
 
-    // Natural cadence: 20-50ms for normal tokens, longer for sentence terminators
-    let delay = 22 + Math.random() * 25;
+    // Cadence
+    let delay = isFast ? 6 : isSlow ? 75 : 18 + Math.random() * 20;
     if (token.includes('.') || token.includes('!') || token.includes('?')) {
-      delay += 80;
-    } else if (token.includes(',') || token.includes(';')) {
-      delay += 40;
+      delay += isFast ? 10 : 60;
     } else if (token.includes('\n')) {
-      delay += 30;
+      delay += isFast ? 8 : 30;
     }
 
     await new Promise((resolve) => setTimeout(resolve, delay));

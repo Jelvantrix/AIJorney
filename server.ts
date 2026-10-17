@@ -24,8 +24,9 @@ async function startServer() {
     res.status(200).json({ status: 'ready', backend: status.activeBackend });
   });
 
-  // API router under /v1
+  // API router under /v1 and /api
   app.use('/v1', apiRouter);
+  app.use('/api', apiRouter);
 
   // Mount Vite middlewares in development
   const isDev = process.env.NODE_ENV !== 'production';

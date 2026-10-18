@@ -1,6 +1,6 @@
 /* ============================================================================
    NOEVIX — DESIGN TOKENS
-   "Light in a dark room" — a strictly monochrome system.
+   "Light in a dark room" — a strictly luminous system.
    No hue. Only pure black, pure white, and calibrated neutrals.
    ========================================================================== */
 
@@ -43,7 +43,7 @@
   --text-muted: rgba(255, 255, 255, 0.64);
   --icon: rgba(255, 255, 255, 0.68);
 
-  /* ── Semantic (monochrome — expressed through weight, not hue) ───────── */
+  /* ── Semantic (expressed through weight, not hue) ───────────────────── */
   --ok: #ffffff;
   --bad: #c4c4c4;
   --work: #dedede;

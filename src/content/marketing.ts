@@ -159,8 +159,8 @@ By ensuring capacity is a power of two, index wrapping incurs a single \`AND\` i
   ],
   faq: [
     {
-      q: 'Why is Noevix strictly monochrome?',
-      a: 'Visual clutter impairs deep cognitive work. By eliminating color saturation completely, we direct 100% of your visual focus to the structure of thought, code, and language.',
+      q: 'Why is Noevix strictly minimal?',
+      a: 'Visual clutter impairs deep cognitive work. By eliminating decorative noise completely, we direct 100% of your visual focus to the structure of thought, code, and language.',
     },
     {
       q: 'How does routing work if there is only one voice?',

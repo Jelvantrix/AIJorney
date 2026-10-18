@@ -2,7 +2,7 @@ import React from 'react';
 
 /* ──────────────────────────────────────────────────────────────────────────
    Mission surface kit — one vocabulary for every mission panel.
-   Monochrome semantics: state is carried by weight, fill and dot topology,
+   Precision semantics: state is carried by weight, fill and dot topology,
    never by hue.
    ────────────────────────────────────────────────────────────────────────── */
 
@@ -225,7 +225,7 @@ export const Td: React.FC<{ children?: React.ReactNode; className?: string; mono
   </td>
 );
 
-/** Monochrome outcome mapping used by verification surfaces. */
+/** Outcome mapping used by verification surfaces. */
 export const outcomeLevel = (outcome: string): Level =>
   outcome === 'pass' ? 'solid' : outcome === 'fail' ? 'hollow' : 'soft';
 

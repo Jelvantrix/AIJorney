@@ -194,7 +194,7 @@
     box-shadow: none;
   }
 
-  /* Danger-ish (monochrome expression: hollow + brighter ink on hover) */
+  /* Danger-ish (minimal expression: hollow + brighter ink on hover) */
   .nv-btn--danger:hover:not(:disabled) {
     color: var(--text);
     border-color: var(--line-bright);
@@ -773,7 +773,7 @@
     background: linear-gradient(90deg, var(--line), transparent 80%);
   }
 
-  /* Deterministic monochrome sparkline. 24 hairline columns. */
+  /* Deterministic precision sparkline. 24 hairline columns. */
   .nv-spark {
     display: flex;
     align-items: flex-end;
@@ -1204,6 +1204,32 @@
 }
 
 /* ── Small animation utilities ────────────────────────────────────────── */
+@keyframes nv-reveal-scale {
+  0% {
+    opacity: 0;
+    transform: scale(0.955) translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.nv-reveal-scale {
+  opacity: 0;
+  animation: nv-reveal-scale 540ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-reveal-scale {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
 .anim-rise {
   animation: nv-rise var(--dur-4) var(--ease-out) both;
 }

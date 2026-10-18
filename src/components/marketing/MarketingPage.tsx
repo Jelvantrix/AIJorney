@@ -119,8 +119,8 @@ If neither vector dominates, the events are concurrent.`,
     icon: Layout,
     time: '190ms',
     tokens: '268',
-    prompt: 'Define a monochrome elevation and typographic token architecture.',
-    response: `Monochrome token architecture
+    prompt: 'Define an elevation and typographic token architecture.',
+    response: `Minimal token architecture
 
 Elevation
   --bg      #000000   ground
@@ -158,7 +158,7 @@ Impact
 ];
 
 /* ── Synthesis highlighter ─────────────────────────────────────────────────
-   Monochrome emphasis: keywords and operators gain weight, nothing else
+   Pure emphasis: keywords and operators gain weight, nothing else
    changes. Comments recede. This is the whole syntax theme.            */
 const HL_SPLIT =
   /(\b(?:Theorem|Proof|Local|Propagation|Since|If|then|only if|neither|concurrent|export|class|private|readonly|constructor|return|boolean|true|false|Context|Decision|Impact|Elevation|Typographic)\b|∀|∃|∈|≤|∎|→|·|—)/g;
@@ -315,11 +315,30 @@ export const MarketingPage: React.FC = () => {
       />
 
       {/* ══ Hero ═══════════════════════════════════════════════════════ */}
-      <section className="relative z-10 flex min-h-[92vh] flex-col items-center justify-center px-[var(--gutter)] pb-16 pt-32 text-center">
-        <div className="mx-auto flex max-w-4xl flex-col items-center">
+      <section className="relative z-10 flex min-h-[92vh] flex-col items-center justify-center overflow-hidden px-[var(--gutter)] pb-16 pt-32 text-center">
+        {/* Hero Background Dot Matrix Grid */}
+        <div
+          className="pointer-events-none absolute inset-0 select-none overflow-hidden"
+          aria-hidden="true"
+          style={{
+            maskImage: 'radial-gradient(ellipse 70% 60% at 50% 40%, black 15%, transparent 75%)',
+            WebkitMaskImage: 'radial-gradient(ellipse 70% 60% at 50% 40%, black 15%, transparent 75%)',
+          }}
+        >
+          <div
+            className="absolute inset-0 h-full w-full"
+            style={{
+              backgroundImage: 'radial-gradient(circle, var(--text-4) 1.5px, transparent 1.5px)',
+              backgroundSize: '24px 24px',
+              opacity: 0.5,
+            }}
+          />
+        </div>
+
+        <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center">
           <span className="nv-badge mb-8">
             <span className="nv-dot nv-dot--live" />
-            Pure monochrome instrument
+            Pure precision instrument
           </span>
 
           <h1
@@ -1173,7 +1192,7 @@ export const MarketingPage: React.FC = () => {
             <div className="col-span-2 max-w-[34ch] sm:col-span-3 md:col-span-4 lg:col-span-1">
               <span className="nv-display text-[22px]">Noevix</span>
               <p className="mt-4 text-[13px] leading-relaxed" style={{ color: 'var(--text-2)' }}>
-                A monochrome reasoning instrument. Claims are checkable, effects are staged, and
+                A modern reasoning instrument. Claims are checkable, effects are staged, and
                 every run leaves a hash-linked record.
               </p>
               <div className="mt-6 flex items-center gap-2.5">

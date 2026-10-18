@@ -36,7 +36,7 @@ const EVENT_LABELS: Record<string, string> = {
   ArtifactRegistered: 'Artifact registered',
 };
 
-/** Monochrome semantics: fill topology encodes severity. */
+/** Topology semantics: fill encodes severity. */
 const EVENT_LEVEL: Record<string, Level> = {
   StepPassed: 'solid',
   MissionCompleted: 'solid',

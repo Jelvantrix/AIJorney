@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useChatStore, type ChatMessage, type LensType } from '../../lib/store.ts';
+import { useChatStore, type ChatMessage, type LensType, AVAILABLE_MODELS } from '../../lib/store.ts';
 import {
   Copy,
   Check,
@@ -20,109 +20,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CodeEditorBlock } from './CodeEditorBlock.tsx';
-
-const DISCIPLINES: Array<{ lens: LensType; title: string; body: string; glyph: string }> = [
-  {
-    lens: 'engineering',
-    title: 'Lock-free ring buffer in Rust',
-    body: 'Zero heap allocation, power-of-two masking, cache-line isolation.',
-    glyph: 'Systems',
-  },
-  {
-    lens: 'reasoning',
-    title: 'Prove vector-clock dominance',
-    body: 'A step-by-step invariant argument for causal ordering across replicas.',
-    glyph: 'Formal',
-  },
-  {
-    lens: 'research',
-    title: 'Raft versus EPaxos',
-    body: 'Synthesise the empirical trade-offs under heavy write contention.',
-    glyph: 'Survey',
-  },
-  {
-    lens: 'design',
-    title: 'Monochrome design constitution',
-    body: 'A token architecture for an editorial, strictly greyscale interface.',
-    glyph: 'Craft',
-  },
-];
-
-/* ────────────────────────────────────────────────────────────────────────── */
-
-const EmptyStage: React.FC<{ onSeed: (text: string) => void }> = ({ onSeed }) => (
-  <div className="anim-rise flex min-h-full flex-col justify-center px-6 py-16 lg:px-2">
-    <div className="mx-auto w-full max-w-[720px]">
-      <div className="mb-7 flex items-center gap-3">
-        <span className="h-px w-10" style={{ background: 'var(--line-strong)' }} />
-        <span className="nv-label">A new thread</span>
-        <span className="h-px flex-1" style={{ background: 'var(--line-faint)' }} />
-      </div>
-
-      <h1
-        className="nv-display text-balance"
-        style={{ fontSize: 'clamp(38px, 6vw, 62px)', lineHeight: 1.01 }}
-      >
-        What should we
-        <br />
-        <em style={{ fontStyle: 'italic', color: 'var(--text-2)' }}>think through</em> together?
-      </h1>
-
-      <p
-        className="text-pretty mt-6 max-w-[46ch] text-[15px] leading-relaxed"
-        style={{ color: 'var(--text-2)' }}
-      >
-        One intelligence across engineering, design, research, reasoning and writing.
-        State a problem, a hypothesis, or a half-formed idea — the dock is below.
-      </p>
-
-      <div className="mt-12 flex items-center gap-3">
-        <span className="nv-label">Or begin from a discipline</span>
-        <span className="h-px flex-1" style={{ background: 'var(--line-faint)' }} />
-      </div>
-
-      <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-        {DISCIPLINES.map((d, i) => (
-          <button
-            key={d.lens}
-            onClick={() => onSeed(d.title)}
-            className="nv-card nv-card--interactive nv-spotlight group/card relative overflow-hidden p-4 text-left"
-            style={{ animation: `nv-rise 420ms var(--ease-out) ${i * 55 + 80}ms both` }}
-            onMouseMove={(e) => {
-              const r = e.currentTarget.getBoundingClientRect();
-              e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - r.left}px`);
-              e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - r.top}px`);
-            }}
-          >
-            <div className="relative flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div
-                  className="text-[13.5px] font-medium leading-snug tracking-[-0.01em]"
-                  style={{ color: 'var(--text)' }}
-                >
-                  {d.title}
-                </div>
-                <p className="mt-1 text-[12px] leading-relaxed" style={{ color: 'var(--text-3)' }}>
-                  {d.body}
-                </p>
-              </div>
-              <ArrowRight
-                className="mt-0.5 h-3.5 w-3.5 shrink-0 -translate-x-1 opacity-0 transition-all duration-200 group-hover/card:translate-x-0 group-hover/card:opacity-70"
-                style={{ color: 'var(--text)' }}
-              />
-            </div>
-            <div className="relative mt-3 flex items-center justify-between">
-              <span className="nv-chip !h-[18px] !text-[9px]">{d.glyph}</span>
-              <span className="nv-label" style={{ opacity: 0.5 }}>
-                {String(i + 1).padStart(2, '0')}
-              </span>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  </div>
-);
+import { EmptyState } from './EmptyState.tsx';
 
 /* ────────────────────────────────────────────────────────────────────────── */
 
@@ -195,7 +93,7 @@ export const Stage: React.FC = () => {
   if (exchanges.length === 0) {
     return (
       <div className="nv-scroll relative z-10 flex-1 overflow-y-auto">
-        <EmptyStage
+        <EmptyState
           onSeed={(t) => {
             sendMessage(t);
           }}
@@ -234,11 +132,23 @@ export const Stage: React.FC = () => {
                   </span>
 
                   <span
-                    className="font-mono text-[9.5px] font-medium uppercase tracking-[0.14em]"
-                    style={{ color: 'var(--text-2)' }}
+                    className="font-mono text-[9px] font-medium uppercase tracking-[0.14em]"
+                    style={{ color: 'var(--text-3)' }}
+                    title="Work specialization lens"
                   >
-                    {assistant?.lens || 'reasoning'}
+                    WORK · {assistant?.lens || 'reasoning'}
                   </span>
+
+                  {assistant?.model && (
+                    <span
+                      className="nv-chip !h-[18px] !text-[9px] !px-1.5"
+                      style={{ color: 'var(--text-2)' }}
+                      title="AI Model used"
+                    >
+                      <Cpu className="h-2.5 w-2.5" />
+                      {AVAILABLE_MODELS.find((m) => m.id === assistant.model)?.shortName || assistant.model}
+                    </span>
+                  )}
 
                   {assistant && (
                     <div className="flex flex-col items-end gap-1.5">
@@ -355,9 +265,15 @@ export const Stage: React.FC = () => {
                   )}
 
                   {/* Mobile meta strip */}
-                  <div className="mt-3 flex items-center gap-2.5 md:hidden">
+                  <div className="mt-3 flex flex-wrap items-center gap-2 md:hidden">
+                    {assistant?.model && (
+                      <span className="nv-chip !h-[18px] !text-[9px]">
+                        <Cpu className="h-2.5 w-2.5" />
+                        {AVAILABLE_MODELS.find((m) => m.id === assistant.model)?.shortName || assistant.model}
+                      </span>
+                    )}
                     <span className="nv-chip !h-[18px] !text-[9px]">
-                      {(assistant?.lens || 'reasoning').toUpperCase()}
+                      WORK: {(assistant?.lens || 'reasoning').toUpperCase()}
                     </span>
                     {assistant?.tokens !== undefined && (
                       <span className="font-mono text-[10px]" style={{ color: 'var(--text-4)' }}>

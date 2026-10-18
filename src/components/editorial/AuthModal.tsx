@@ -115,7 +115,7 @@ export const AuthModal: React.FC = () => {
               style={{ borderColor: 'var(--line)', color: 'var(--text-4)' }}
             >
               <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-              Zero tracking. Monochrome by constitution.
+              Zero tracking. Private by constitution.
             </div>
           </>
         )}

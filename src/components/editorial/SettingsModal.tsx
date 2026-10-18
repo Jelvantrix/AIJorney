@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useChatStore } from '../../lib/store.ts';
+import { useChatStore, AVAILABLE_MODELS, type ModelId } from '../../lib/store.ts';
 import { getStoredTheme, setStoredTheme, type Theme } from '../../lib/theme.ts';
 import {
   X,
@@ -18,6 +18,7 @@ import {
   Palette,
   FileCode2,
   Database,
+  Cpu,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -128,6 +129,8 @@ export const SettingsModal: React.FC = () => {
   const {
     isSettingsOpen,
     setSettingsOpen,
+    selectedModel,
+    setSelectedModel,
     outputStyle,
     setOutputStyle,
     responseDepth,
@@ -245,6 +248,43 @@ export const SettingsModal: React.FC = () => {
 
             {section === 'response' && (
               <div className="anim-fade space-y-5">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="nv-label">Default AI Model & Engine</span>
+                    <span className="text-[10.5px] font-mono" style={{ color: 'var(--text-4)' }}>
+                      Inference engine
+                    </span>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {AVAILABLE_MODELS.map((m) => (
+                      <Card
+                        key={m.id}
+                        icon={Cpu}
+                        title={m.name}
+                        desc={m.description}
+                        active={selectedModel === m.id}
+                        onClick={() => setSelectedModel(m.id)}
+                        trailing={
+                          <span
+                            className="rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider shrink-0"
+                            style={{ background: 'var(--glass-3)', color: 'var(--text-3)' }}
+                          >
+                            {m.badge}
+                          </span>
+                        }
+                      >
+                        <div className="mt-1 flex items-center gap-2 font-mono text-[9.5px]" style={{ color: 'var(--text-4)' }}>
+                          <span>{m.provider}</span>
+                          <span>·</span>
+                          <span>{m.speed}</span>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="nv-hair" />
+
                 <div>
                   <div className="nv-label mb-2">Answer shape</div>
                   <div className="grid gap-2 sm:grid-cols-2">

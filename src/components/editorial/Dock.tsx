@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useChatStore, type LensType } from '../../lib/store.ts';
+import { useChatStore, type LensType, AVAILABLE_MODELS, type ModelId } from '../../lib/store.ts';
 import {
   Paperclip,
   ArrowUp,
@@ -33,7 +33,7 @@ import {
 const LENSES: Array<{ id: LensType; label: string; desc: string; icon: LucideIcon }> = [
   { id: 'auto', label: 'Auto', desc: 'Adaptive routing across every discipline', icon: Wand2 },
   { id: 'engineering', label: 'Engineering', desc: 'Algorithms, systems, Rust, TypeScript', icon: Cpu },
-  { id: 'design', label: 'Design', desc: 'Spatial layout, type systems, monochrome', icon: Palette },
+  { id: 'design', label: 'Design', desc: 'Spatial layout, type systems, aesthetic design', icon: Palette },
   { id: 'research', label: 'Research', desc: 'Papers, benchmarks, causal synthesis', icon: Microscope },
   { id: 'reasoning', label: 'Reasoning', desc: 'Formal proofs, invariants, trade-offs', icon: Sigma },
   { id: 'writing', label: 'Writing', desc: 'Memos, RFCs, documentation', icon: PenLine },
@@ -74,6 +74,10 @@ export const Dock: React.FC = () => {
     stopStreaming,
     selectedLensOverride,
     setSelectedLens,
+    selectedModel,
+    setSelectedModel,
+    isModelMenuOpen,
+    setModelMenuOpen,
     setIsTyping,
     setTypingRate,
     isLensMenuOpen,
@@ -93,12 +97,14 @@ export const Dock: React.FC = () => {
 
   const taRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const modelRef = useRef<HTMLDivElement>(null);
   const lensRef = useRef<HTMLDivElement>(null);
   const presetRef = useRef<HTMLDivElement>(null);
   const keysRef = useRef<number[]>([]);
   const recogRef = useRef<any>(null);
 
   const convo = (activeId && messages[activeId]) || [];
+  const activeModel = AVAILABLE_MODELS.find((m) => m.id === selectedModel) || AVAILABLE_MODELS[0];
 
   useEffect(() => {
     const el = taRef.current;
@@ -113,12 +119,13 @@ export const Dock: React.FC = () => {
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
+      if (modelRef.current && !modelRef.current.contains(e.target as Node)) setModelMenuOpen(false);
       if (lensRef.current && !lensRef.current.contains(e.target as Node)) setLensMenuOpen(false);
       if (presetRef.current && !presetRef.current.contains(e.target as Node)) setShowPresets(false);
     };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
-  }, [setLensMenuOpen]);
+  }, [setLensMenuOpen, setModelMenuOpen]);
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const v = e.target.value;
@@ -304,7 +311,7 @@ export const Dock: React.FC = () => {
 
         {/* ── The dock ───────────────────────────────────────────── */}
         <div
-          className="nv-edge relative overflow-hidden rounded-[24px] transition-all duration-300"
+          className="nv-edge relative rounded-[24px] transition-all duration-300"
           style={{
             background: 'linear-gradient(180deg, var(--surface-2) 0%, var(--surface-1) 100%)',
             border: '1px solid transparent',
@@ -332,7 +339,7 @@ export const Dock: React.FC = () => {
               onBlur={() => setFocused(false)}
               rows={1}
               placeholder="Ask anything, or describe what you want to build…"
-              className="nv-scroll min-h-[44px] w-full resize-none bg-transparent px-2 py-2 text-[15.5px] leading-relaxed tracking-[-0.011em] outline-none"
+              className="nv-scroll min-h-[44px] w-full resize-none rounded-[18px] bg-transparent px-2 py-2 text-[15.5px] leading-relaxed tracking-[-0.011em] outline-none"
               style={{ color: 'var(--text)' }}
             />
             <button
@@ -345,8 +352,8 @@ export const Dock: React.FC = () => {
           </div>
 
           {/* control row */}
-          <div className="flex items-center justify-between gap-2 px-3 pb-2.5 pt-1">
-            <div className="flex min-w-0 items-center gap-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-2.5 pt-1">
+            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
               <input ref={fileRef} type="file" multiple onChange={onFiles} className="hidden" />
               <button
                 onClick={() => fileRef.current?.click()}
@@ -365,57 +372,175 @@ export const Dock: React.FC = () => {
                 <Type className="h-4 w-4" />
               </button>
 
-              {/* Discipline selector */}
+              {/* 1. SEPARATE AI MODEL SELECTOR */}
+              <div className="relative" ref={modelRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModelMenuOpen(!isModelMenuOpen);
+                    if (!isModelMenuOpen) setLensMenuOpen(false);
+                  }}
+                  className="nv-pill h-10 !px-2.5 sm:!px-3 lg:h-8"
+                  data-active={isModelMenuOpen}
+                  title="Select AI Model / Engine"
+                >
+                  <Cpu className="h-3.5 w-3.5" style={{ color: 'var(--text-1)' }} />
+                  <span className="font-medium text-[12.5px]">{activeModel.shortName}</span>
+                  <ChevronDown className="h-3 w-3" style={{ color: 'var(--text-4)' }} />
+                </button>
+
+                {isModelMenuOpen && (
+                  <div
+                    className="nv-menu absolute bottom-[calc(100%+12px)] left-0 z-50 w-[330px] max-w-[calc(100vw-32px)] max-h-[min(440px,70vh)] overflow-y-auto nv-scroll"
+                    style={{ ['--menu-origin' as any]: 'bottom left' }}
+                  >
+                    <div className="px-2 pt-1 pb-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="nv-menu__label !p-0">AI Engine & Model</span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--glass-2)]" style={{ color: 'var(--text-3)' }}>
+                          {AVAILABLE_MODELS.length} models
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[11px] leading-tight" style={{ color: 'var(--text-4)' }}>
+                        Select the AI intelligence engine answering your prompts
+                      </p>
+                    </div>
+                    <div className="nv-menu__sep" />
+                    <div className="space-y-0.5 py-1">
+                      {AVAILABLE_MODELS.map((m) => {
+                        const active = selectedModel === m.id;
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            data-active={active}
+                            onClick={() => {
+                              setSelectedModel(m.id);
+                              setModelMenuOpen(false);
+                            }}
+                            className="nv-menu__item items-start !py-2.5 !px-2.5"
+                          >
+                            <span
+                              className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px]"
+                              style={{
+                                background: active ? 'var(--text)' : 'var(--glass-2)',
+                                border: `1px solid ${active ? 'var(--text)' : 'var(--line-faint)'}`,
+                                color: active ? 'var(--bg)' : 'var(--text-2)',
+                              }}
+                            >
+                              <Cpu className="h-3.5 w-3.5" />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="flex items-center justify-between gap-1.5">
+                                <span className="text-[13px] font-semibold leading-none" style={{ color: 'var(--text)' }}>
+                                  {m.name}
+                                </span>
+                                <span className="flex items-center gap-1.5">
+                                  <span
+                                    className="rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider font-medium"
+                                    style={{ background: 'var(--glass-3)', color: 'var(--text-2)' }}
+                                  >
+                                    {m.badge}
+                                  </span>
+                                  {active && <Check className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--text)' }} />}
+                                </span>
+                              </span>
+                              <span className="mt-1 block text-[11.5px] leading-snug" style={{ color: 'var(--text-3)' }}>
+                                {m.description}
+                              </span>
+                              <span className="mt-1.5 flex items-center gap-2 font-mono text-[9.5px]" style={{ color: 'var(--text-4)' }}>
+                                <span className="font-medium" style={{ color: 'var(--text-3)' }}>{m.provider}</span>
+                                <span>·</span>
+                                <span>ctx {m.contextWindow}</span>
+                                <span>·</span>
+                                <span>{m.speed}</span>
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 2. SEPARATE WORK FOCUS & DISCIPLINE SELECTOR */}
               <div className="relative" ref={lensRef}>
                 <button
-                  onClick={() => setLensMenuOpen(!isLensMenuOpen)}
-                  className="nv-pill h-10 !px-3 lg:h-8"
+                  type="button"
+                  onClick={() => {
+                    setLensMenuOpen(!isLensMenuOpen);
+                    if (!isLensMenuOpen) setModelMenuOpen(false);
+                  }}
+                  className="nv-pill h-10 !px-2.5 sm:!px-3 lg:h-8"
                   data-active={isLensMenuOpen}
-                  title="Discipline lens  (⌘/)"
+                  title="Work Focus & Discipline (⌘/)"
                 >
                   <LensIcon className="h-3.5 w-3.5" style={{ color: 'var(--text-2)' }} />
-                  <span>{activeLens.label}</span>
+                  <span className="text-[12.5px]">Work: {activeLens.label}</span>
                   <ChevronDown className="h-3 w-3" style={{ color: 'var(--text-4)' }} />
                 </button>
 
                 {isLensMenuOpen && (
                   <div
-                    className="nv-menu absolute bottom-[calc(100%+10px)] left-0 z-50 w-[300px]"
+                    className="nv-menu absolute bottom-[calc(100%+12px)] left-0 sm:left-auto z-50 w-[310px] max-w-[calc(100vw-32px)] max-h-[min(440px,70vh)] overflow-y-auto nv-scroll"
                     style={{ ['--menu-origin' as any]: 'bottom left' }}
                   >
-                    <div className="nv-menu__label">Discipline</div>
-                    {LENSES.map((l) => {
-                      const Icon = l.icon;
-                      const active = selectedLensOverride === l.id;
-                      return (
-                        <button
-                          key={l.id}
-                          data-active={active}
-                          onClick={() => {
-                            setSelectedLens(l.id);
-                            setLensMenuOpen(false);
-                          }}
-                          className="nv-menu__item items-start"
-                        >
-                          <Icon
-                            className="mt-0.5 h-4 w-4 shrink-0"
-                            style={{ color: active ? 'var(--text)' : 'var(--text-3)' }}
-                          />
-                          <span className="min-w-0 flex-1">
-                            <span className="flex items-center justify-between gap-2">
-                              <span className="text-[13px] font-medium">{l.label}</span>
-                              {active && <Check className="h-3.5 w-3.5" />}
-                            </span>
+                    <div className="px-2 pt-1 pb-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="nv-menu__label !p-0">Work Focus & Discipline</span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--glass-2)]" style={{ color: 'var(--text-3)' }}>
+                          Task Mode
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[11px] leading-tight" style={{ color: 'var(--text-4)' }}>
+                        Select specialization: role persona, reasoning depth & tools
+                      </p>
+                    </div>
+                    <div className="nv-menu__sep" />
+                    <div className="space-y-0.5 py-1">
+                      {LENSES.map((l) => {
+                        const Icon = l.icon;
+                        const active = selectedLensOverride === l.id;
+                        return (
+                          <button
+                            key={l.id}
+                            type="button"
+                            data-active={active}
+                            onClick={() => {
+                              setSelectedLens(l.id);
+                              setLensMenuOpen(false);
+                            }}
+                            className="nv-menu__item items-start !py-2.5 !px-2.5"
+                          >
                             <span
-                              className="mt-0.5 block text-[11.5px] leading-snug"
-                              style={{ color: 'var(--text-4)' }}
+                              className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px]"
+                              style={{
+                                background: active ? 'var(--text)' : 'var(--glass-2)',
+                                border: `1px solid ${active ? 'var(--text)' : 'var(--line-faint)'}`,
+                                color: active ? 'var(--bg)' : 'var(--text-2)',
+                              }}
                             >
-                              {l.desc}
+                              <Icon className="h-3.5 w-3.5" />
                             </span>
-                          </span>
-                        </button>
-                      );
-                    })}
+                            <span className="min-w-0 flex-1">
+                              <span className="flex items-center justify-between gap-2">
+                                <span className="text-[13px] font-semibold leading-none" style={{ color: 'var(--text)' }}>
+                                  {l.label}
+                                </span>
+                                {active && <Check className="h-3.5 w-3.5 shrink-0" />}
+                              </span>
+                              <span
+                                className="mt-1 block text-[11.5px] leading-snug"
+                                style={{ color: 'var(--text-3)' }}
+                              >
+                                {l.desc}
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>

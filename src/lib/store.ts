@@ -3,6 +3,101 @@ import { streamMockResponse } from './mockStream.ts';
 
 export type LensType = 'auto' | 'engineering' | 'design' | 'research' | 'reasoning' | 'writing';
 
+export type ModelId =
+  | 'noevix-auto'
+  | 'gemini-2.5-flash'
+  | 'claude-3.7-sonnet'
+  | 'gpt-4o'
+  | 'o3-mini'
+  | 'deepseek-r1'
+  | 'llama-3.3';
+
+export interface ModelOption {
+  id: ModelId;
+  name: string;
+  shortName: string;
+  provider: string;
+  badge: string;
+  description: string;
+  contextWindow: string;
+  speed: string;
+  isDefault?: boolean;
+}
+
+export const AVAILABLE_MODELS: ModelOption[] = [
+  {
+    id: 'noevix-auto',
+    name: 'Noevix Auto Engine',
+    shortName: 'Auto Engine',
+    provider: 'Intelligent Router',
+    badge: 'Adaptive',
+    description: 'Dynamically routes prompts to the highest-performing model for the task',
+    contextWindow: '128k',
+    speed: 'Adaptive',
+    isDefault: true,
+  },
+  {
+    id: 'gemini-2.5-flash',
+    name: 'Gemini 2.5 Flash',
+    shortName: 'Gemini 2.5',
+    provider: 'Google DeepMind',
+    badge: 'Ultra Fast',
+    description: 'Sub-200ms TTFT, multimodal reasoning and native 1M token context',
+    contextWindow: '1M',
+    speed: '< 180ms',
+  },
+  {
+    id: 'claude-3.7-sonnet',
+    name: 'Claude 3.7 Sonnet',
+    shortName: 'Claude 3.7',
+    provider: 'Anthropic',
+    badge: 'Hybrid Thinking',
+    description: 'Extended reflection mode, premier code architecture and nuanced prose',
+    contextWindow: '200k',
+    speed: 'Thoughtful',
+  },
+  {
+    id: 'gpt-4o',
+    name: 'GPT-4o Omnimodal',
+    shortName: 'GPT-4o',
+    provider: 'OpenAI',
+    badge: 'Multimodal',
+    description: 'Broad generalist versatility and strong structured data generation',
+    contextWindow: '128k',
+    speed: '~ 320ms',
+  },
+  {
+    id: 'o3-mini',
+    name: 'OpenAI o3-mini',
+    shortName: 'o3-mini',
+    provider: 'OpenAI',
+    badge: 'Deep Logic',
+    description: 'High-compute chain-of-thought for mathematical proofs and logic puzzles',
+    contextWindow: '128k',
+    speed: 'Deep Think',
+  },
+  {
+    id: 'deepseek-r1',
+    name: 'DeepSeek R1',
+    shortName: 'DeepSeek R1',
+    provider: 'DeepSeek',
+    badge: 'Open Reasoning',
+    description: 'Transparent verifiable reasoning traces with zero-shot algorithmic strength',
+    contextWindow: '64k',
+    speed: '~ 420ms',
+  },
+  {
+    id: 'llama-3.3',
+    name: 'Llama 3.3 70B',
+    shortName: 'Llama 3.3',
+    provider: 'Meta AI',
+    badge: 'Open Weights',
+    description: 'Leading open-weights model for high-efficiency system engineering',
+    contextWindow: '128k',
+    speed: '~ 240ms',
+  },
+];
+
 export interface AttachmentItem {
   id: string;
   name: string;
@@ -18,6 +113,7 @@ export interface ChatMessage {
   content: string;
   created_at: number;
   lens?: LensType;
+  model?: ModelId;
   tokens?: number;
   elapsed_ms?: number;
   pinned?: boolean;
@@ -70,6 +166,8 @@ interface ChatState {
   currentToolStatus: 'SEARCHING' | 'READING' | 'EXECUTING' | null;
   activeLens: LensType;
   selectedLensOverride: LensType; // 'auto' or specific
+  selectedModel: ModelId;
+  isModelMenuOpen: boolean;
   elapsedMs: number;
   tokenCount: number;
   abortController: AbortController | null;
@@ -116,6 +214,8 @@ interface ChatState {
   openArtifact: (art: ArtifactItem) => void;
   setActiveExchangeIndex: (idx: number) => void;
   setSelectedLens: (lens: LensType) => void;
+  setSelectedModel: (model: ModelId) => void;
+  setModelMenuOpen: (open: boolean) => void;
   completeOnboarding: () => void;
   nextOnboardingStep: () => void;
   startOnboarding: () => void;
@@ -167,7 +267,7 @@ const SEED_CONVERSATIONS: ConversationItem[] = [
   },
   {
     id: 'space_design_tokens',
-    title: 'Monochrome Luminous Design Constitution',
+    title: 'Luminous Design Constitution',
     created_at: Date.now() - 3600000 * 72,
     updated_at: Date.now() - 3600000 * 72,
   },
@@ -368,6 +468,8 @@ export const useChatStore = create<ChatState>((set, get) => {
     currentToolStatus: null,
     activeLens: 'reasoning',
     selectedLensOverride: 'auto',
+    selectedModel: (typeof window !== 'undefined' && (localStorage.getItem('noevix_selected_model') as any)) || 'noevix-auto',
+    isModelMenuOpen: false,
     elapsedMs: 0,
     tokenCount: 0,
     abortController: null,
@@ -414,6 +516,11 @@ export const useChatStore = create<ChatState>((set, get) => {
     openArtifact: (art) => set({ activeArtifact: art, isArtifactSheetOpen: true }),
     setActiveExchangeIndex: (idx) => set({ activeExchangeIndex: idx }),
     setSelectedLens: (lens) => set({ selectedLensOverride: lens }),
+    setSelectedModel: (model) => {
+      if (typeof window !== 'undefined') localStorage.setItem('noevix_selected_model', model);
+      set({ selectedModel: model });
+    },
+    setModelMenuOpen: (open) => set({ isModelMenuOpen: open }),
 
     setOutputStyle: (style) => {
       localStorage.setItem('noevix_output_style', style);
@@ -684,6 +791,7 @@ export const useChatStore = create<ChatState>((set, get) => {
             content: accumulated,
             created_at: Date.now(),
             lens: detectedLens,
+            model: get().selectedModel,
             tokens,
             elapsed_ms: Math.round(performance.now() - startTime),
             versions: [accumulated],

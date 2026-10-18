@@ -9,7 +9,7 @@ interface AuraProps {
 
 /**
  * The room's light source. A single scalar (--energy) is eased every frame and
- * consumed by CSS to drive a faint monochrome bloom behind the interface.
+ * consumed by CSS to drive a faint ambient bloom behind the interface.
  */
 export const Aura: React.FC<AuraProps> = ({ forcedState }) => {
   const { isStreaming, isThinking, streamingError, isTyping, typingRate, reduceEffects } =

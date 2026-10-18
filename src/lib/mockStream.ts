@@ -77,7 +77,7 @@ export class RingBuffer<T> {
 Start with PostgreSQL for general domain models. Migrate high-throughput append-only streams to an LSM-tree based engine only when write volume exceeds single-node SSD IOPS limits.`,
   },
   {
-    match: /(design|aura|monochrome|editorial|typography|light in a dark room)/i,
+    match: /(design|aura|editorial|typography|light in a dark room)/i,
     response: `The "Light in a dark room" constitution establishes an editorial instrument where illumination is the singular decorative element.
 
 ### Architectural Tenets

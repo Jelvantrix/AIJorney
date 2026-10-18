@@ -104,7 +104,7 @@ export const OnboardingModal: React.FC = () => {
                 <span className="nv-caret" />
               </div>
               <p className="mt-6 max-w-[52ch] text-[14px] leading-relaxed" style={{ color: 'var(--text-2)' }}>
-                Noevix removes decorative colour and chat bubbles entirely. A single monochrome canvas
+                Noevix removes decorative colour and chat bubbles entirely. A single luminous canvas
                 keeps every unit of attention on the work itself.
               </p>
             </div>

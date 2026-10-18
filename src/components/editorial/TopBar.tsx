@@ -1,27 +1,16 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useChatStore } from '../../lib/store.ts';
-import {
-  Search,
-  Pencil,
-  Check,
-  Download,
-  PanelLeft,
-  ChevronRight,
-  Sparkles,
-} from 'lucide-react';
+import { Search, Pencil, Check, Download, PanelLeft, ChevronRight } from 'lucide-react';
 
 export const TopBar: React.FC = () => {
   const {
     activeId,
     conversations,
-    messages,
     renameConversation,
     setSpacesMenuOpen,
     setIndexOpen,
     exportSpace,
     isStreaming,
-    activeLens,
-    selectedLensOverride,
   } = useChatStore();
 
   const [editing, setEditing] = useState(false);
@@ -29,13 +18,6 @@ export const TopBar: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const space = conversations.find((c) => c.id === activeId);
-  const convo = (activeId && messages[activeId]) || [];
-
-  const stats = useMemo(() => {
-    const exchanges = convo.filter((m) => m.role === 'user').length;
-    const tokens = convo.reduce((acc, m) => acc + (m.tokens || 0), 0);
-    return { exchanges, tokens };
-  }, [convo]);
 
   useEffect(() => {
     if (editing) setTimeout(() => inputRef.current?.select(), 20);
@@ -58,34 +40,34 @@ export const TopBar: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const lensLabel = (selectedLensOverride === 'auto' ? activeLens : selectedLensOverride).toUpperCase();
-
   return (
     <header
-      className="nv-topline relative z-20 flex h-[var(--topbar-h)] shrink-0 items-center gap-3 px-4"
+      className="relative z-20 flex h-[var(--topbar-h)] shrink-0 items-center justify-between gap-3 px-4 sm:px-6"
       style={{
-        borderBottom: '1px solid var(--line)',
-        background: 'color-mix(in srgb, var(--bg) 82%, transparent)',
+        border: 'none',
+        background: 'color-mix(in srgb, var(--bg) 70%, transparent)',
         backdropFilter: 'blur(16px) saturate(140%)',
         WebkitBackdropFilter: 'blur(16px) saturate(140%)',
       }}
     >
-      {/* Mobile rail trigger */}
-      <button
-        onClick={() => setSpacesMenuOpen(true)}
-        className="nv-iconbtn nv-iconbtn--sm lg:hidden"
-        aria-label="Open spaces"
-      >
-        <PanelLeft className="h-4 w-4" />
-      </button>
-
-      {/* Breadcrumb */}
+      {/* Left: Mobile trigger & Space Title Breadcrumb */}
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <span className="nv-label hidden shrink-0 sm:inline">Space</span>
-        <ChevronRight className="hidden h-3 w-3 shrink-0 sm:block" style={{ color: 'var(--text-4)' }} />
+        {/* Mobile rail trigger - clean borderless ghost */}
+        <button
+          onClick={() => setSpacesMenuOpen(true)}
+          className="flex h-8 w-8 items-center justify-center rounded-[8px] border-0 bg-transparent text-[var(--text-3)] transition-colors hover:bg-[var(--glass-2)] hover:text-[var(--text)] lg:hidden"
+          aria-label="Open spaces"
+        >
+          <PanelLeft className="h-4 w-4" />
+        </button>
+
+        <span className="hidden shrink-0 text-[12px] font-medium tracking-wide uppercase opacity-45 sm:inline" style={{ color: 'var(--text-3)' }}>
+          Space
+        </span>
+        <ChevronRight className="hidden h-3 w-3 shrink-0 opacity-40 sm:block" style={{ color: 'var(--text-4)' }} />
 
         {editing ? (
-          <div className="nv-field h-10 max-w-[420px] flex-1 px-2.5 lg:h-8">
+          <div className="flex max-w-[420px] flex-1 items-center gap-2">
             <input
               ref={inputRef}
               value={draft}
@@ -95,10 +77,13 @@ export const TopBar: React.FC = () => {
                 if (e.key === 'Enter') commit();
                 if (e.key === 'Escape') setEditing(false);
               }}
-              className="!text-[14px]"
+              className="flex-1 border-b border-[var(--text-3)] bg-transparent py-1 text-[14px] font-medium text-[var(--text)] outline-none"
               autoFocus
             />
-            <button onClick={commit} className="nv-iconbtn nv-iconbtn--sm !h-8 !w-8 lg:!h-6 lg:!w-6">
+            <button
+              onClick={commit}
+              className="flex h-7 w-7 items-center justify-center rounded-[6px] border-0 bg-transparent text-[var(--text-2)] hover:bg-[var(--glass-2)] hover:text-[var(--text)]"
+            >
               <Check className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -108,10 +93,7 @@ export const TopBar: React.FC = () => {
               setDraft(space?.title || 'Untitled Space');
               setEditing(true);
             }}
-            className="group flex min-h-[40px] min-w-0 items-center gap-2 rounded-[8px] px-2 py-1 transition-colors lg:min-h-0"
-            style={{ color: 'var(--text)' }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--glass-2)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            className="group flex min-h-[36px] min-w-0 items-center gap-2 rounded-[8px] border-0 bg-transparent px-2 py-1 transition-colors hover:bg-[var(--glass-2)]"
             title="Rename this space"
           >
             <span
@@ -122,51 +104,36 @@ export const TopBar: React.FC = () => {
             </span>
             <Pencil
               className="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-60"
-              style={{ color: 'var(--text-2)' }}
+              style={{ color: 'var(--text-3)' }}
             />
           </button>
         )}
-      </div>
 
-      {/* Telemetry */}
-      <div className="hidden items-center gap-2 md:flex">
-        {isStreaming ? (
-          <span className="nv-badge" style={{ color: 'var(--text)' }}>
-            <span className="nv-dot nv-dot--live" />
-            {lensLabel}
-          </span>
-        ) : (
-          <span className="nv-chip">
-            <Sparkles className="h-3 w-3" />
-            {lensLabel}
+        {isStreaming && (
+          <span className="ml-2 flex items-center gap-1.5 text-[11px] font-medium tracking-wide" style={{ color: 'var(--text-2)' }}>
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--text)] animate-pulse" />
+            Active
           </span>
         )}
-        <span className="nv-chip">
-          <span className="nv-num">{String(stats.exchanges).padStart(2, '0')}</span> turns
-        </span>
-        <span className="nv-chip">
-          <span className="nv-num">{stats.tokens.toLocaleString()}</span> tok
-        </span>
       </div>
 
-      <span className="hidden h-5 w-px md:block" style={{ background: 'var(--line)' }} />
-
-      {/* Actions */}
-      <div className="flex items-center gap-1.5">
+      {/* Right Actions: Search & Export - Clean borderless ghost elements */}
+      <div className="flex items-center gap-1">
         <button
           onClick={() => setIndexOpen(true)}
-          className="nv-btn nv-btn--sm"
-          style={{ color: 'var(--text-2)' }}
-          title="Search everything"
+          className="flex h-8 items-center gap-2 rounded-[8px] border-0 bg-transparent px-2.5 text-[13px] transition-colors hover:bg-[var(--glass-2)]"
+          style={{ color: 'var(--text-3)' }}
+          title="Search everything (⌘K)"
         >
-          <Search className="h-3.5 w-3.5" />
+          <Search className="h-3.5 w-3.5 text-[var(--text-2)]" />
           <span className="hidden sm:inline">Search</span>
-          <span className="nv-kbd ml-1 hidden h-[16px] text-[9px] sm:inline-flex">⌘K</span>
+          <span className="hidden font-mono text-[10px] tracking-wider opacity-60 sm:inline">⌘K</span>
         </button>
 
         <button
           onClick={handleExport}
-          className="nv-iconbtn nv-iconbtn--sm"
+          className="flex h-8 w-8 items-center justify-center rounded-[8px] border-0 bg-transparent transition-colors hover:bg-[var(--glass-2)] hover:text-[var(--text)]"
+          style={{ color: 'var(--text-3)' }}
           title="Export space as Markdown"
         >
           <Download className="h-4 w-4" />

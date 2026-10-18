@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ToolDefinition } from './types.ts';
+import { ToolDefinition, ToolSideEffect } from './types.ts';
 
 export const RetrievalParamsSchema = z.object({
   query: z.string().min(1),
@@ -68,6 +68,7 @@ export function getIndexedDocuments() {
 export class RetrievalTool implements ToolDefinition<RetrievalParams, Array<{ chunk: DocumentChunk; score: number }>> {
   public readonly name = 'retrieval';
   public readonly description = 'Retrieve relevant excerpts from uploaded documents via semantic term matching and lexical ranking.';
+  public readonly sideEffect: ToolSideEffect = 'read';
   public readonly schema = RetrievalParamsSchema;
 
   public async execute(params: RetrievalParams): Promise<Array<{ chunk: DocumentChunk; score: number }>> {

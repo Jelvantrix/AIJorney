@@ -1,15 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useChatStore } from '../../lib/store.ts';
 import {
   Plus,
   MessageSquare,
   Search,
   Trash2,
-  Edit2,
+  Pencil,
   Check,
   X,
-  Clock,
-  Sparkles,
+  Download,
+  Layers,
 } from 'lucide-react';
 
 export const SpacesMenu: React.FC = () => {
@@ -22,215 +22,277 @@ export const SpacesMenu: React.FC = () => {
     newChat,
     deleteConversation,
     renameConversation,
+    exportSpace,
   } = useChatStore();
 
-  const [search, setSearch] = useState('');
+  const [query, setQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState('');
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [draft, setDraft] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isSpacesMenuOpen) {
-      setTimeout(() => searchInputRef.current?.focus(), 50);
-    }
+    if (isSpacesMenuOpen) setTimeout(() => searchRef.current?.focus(), 60);
   }, [isSpacesMenuOpen]);
+
+  useEffect(() => {
+    if (!isSpacesMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSpacesMenuOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isSpacesMenuOpen, setSpacesMenuOpen]);
+
+  const groups = useMemo(() => {
+    const q = query.toLowerCase();
+    const filtered = conversations.filter((c) => c.title.toLowerCase().includes(q));
+    const now = Date.now();
+    const day = 86_400_000;
+    const buckets: Array<{ label: string; items: typeof filtered }> = [
+      { label: 'Today', items: [] },
+      { label: 'This week', items: [] },
+      { label: 'Earlier', items: [] },
+    ];
+    filtered.forEach((c) => {
+      const age = now - c.updated_at;
+      if (age < day) buckets[0].items.push(c);
+      else if (age < day * 7) buckets[1].items.push(c);
+      else buckets[2].items.push(c);
+    });
+    return buckets.filter((b) => b.items.length);
+  }, [conversations, query]);
 
   if (!isSpacesMenuOpen) return null;
 
-  const filtered = conversations.filter((c) =>
-    c.title.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const handleStartRename = (id: string, currentTitle: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingId(id);
-    setEditTitle(currentTitle);
-  };
-
-  const handleSaveRename = (id: string) => {
-    if (editTitle.trim()) {
-      renameConversation(id, editTitle.trim());
-    }
-    setEditingId(null);
-  };
-
-  const handleNewChat = () => {
-    const newId = newChat('Untitled Space');
-    setActiveConversation(newId);
-    setSpacesMenuOpen(false);
+  const exportOne = (id: string) => {
+    const md = exportSpace(id);
+    const url = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(conversations.find((c) => c.id === id)?.title || 'space').toLowerCase().replace(/\s+/g, '-')}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex pointer-events-none">
-      {/* Dim backdrop */}
-      <div
-        onClick={() => setSpacesMenuOpen(false)}
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-200 pointer-events-auto"
-      />
+    <div className="fixed inset-0 z-50 flex">
+      <div className="nv-scrim" onClick={() => setSpacesMenuOpen(false)} />
 
-      {/* Slide-out Drawer */}
       <aside
-        className="relative w-full max-w-sm h-full bg-[var(--elev-1)] border-r border-[var(--line-strong)] shadow-2xl flex flex-col pointer-events-auto z-10 animate-[wordReveal_180ms_cubic-bezier(0.16,1,0.3,1)]"
-        aria-label="Chats and Spaces Drawer"
+        className="anim-rise relative z-10 flex h-full w-full max-w-[380px] flex-col"
+        style={{
+          background: 'linear-gradient(180deg, var(--surface-2), var(--surface-1))',
+          borderRight: '1px solid var(--line-strong)',
+          boxShadow: 'var(--shadow-4)',
+        }}
+        aria-label="Spaces"
       >
-        {/* Header with New Chat & Close */}
-        <div className="p-4 border-b border-[var(--line)] flex items-center justify-between bg-[var(--elev-2)]">
-          <div className="flex items-center gap-2">
-            <span className="font-serif-display text-xl text-[var(--text)]">Spaces & Chats</span>
-            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-[4px] bg-[var(--elev-3)] text-[var(--text-3)]">
-              {conversations.length}
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 pb-3 pt-4">
+          <div className="flex items-center gap-2.5">
+            <span
+              className="flex h-8 w-8 items-center justify-center rounded-[10px]"
+              style={{ background: 'var(--glass-2)', border: '1px solid var(--line)', boxShadow: 'var(--shadow-inset)' }}
+            >
+              <Layers className="h-4 w-4" style={{ color: 'var(--text-2)' }} />
             </span>
+            <div>
+              <div className="text-[14px] font-medium leading-none" style={{ color: 'var(--text)' }}>
+                Spaces
+              </div>
+              <div className="nv-label mt-1 !text-[9px]">
+                {conversations.length} thread{conversations.length === 1 ? '' : 's'}
+              </div>
+            </div>
           </div>
 
           <button
             onClick={() => setSpacesMenuOpen(false)}
-            className="p-1.5 rounded-[6px] text-[var(--text-3)] hover:text-[var(--text)] hover:bg-[var(--elev-3)] transition-colors"
-            title="Close Drawer"
+            className="nv-iconbtn nv-iconbtn--sm"
+            aria-label="Close"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Action: "+ New Chat" button */}
-        <div className="p-4 pb-2">
+        {/* New */}
+        <div className="px-4 pb-3">
           <button
-            onClick={handleNewChat}
-            className="w-full py-2.5 px-4 rounded-[10px] bg-[var(--text)] text-[var(--bg)] text-[13px] font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm"
+            onClick={() => {
+              const id = newChat('Untitled Space');
+              setActiveConversation(id);
+              setSpacesMenuOpen(false);
+            }}
+            className="nv-btn nv-btn--primary w-full"
           >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Create New Chat</span>
+            <Plus className="h-4 w-4" strokeWidth={2.4} />
+            New space
           </button>
         </div>
 
-        {/* Search filter */}
-        <div className="px-4 py-2">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-[8px] bg-[var(--elev-2)] border border-[var(--line)] text-[13px]">
-            <Search className="w-3.5 h-3.5 text-[var(--text-3)]" />
+        {/* Search */}
+        <div className="px-4 pb-3">
+          <div className="nv-field h-9">
+            <Search className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--text-3)' }} />
             <input
-              ref={searchInputRef}
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Filter chats..."
-              className="w-full bg-transparent text-[var(--text)] placeholder-[var(--text-3)] outline-none"
+              ref={searchRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filter spaces…"
             />
-            {search && (
-              <button onClick={() => setSearch('')} className="text-[var(--text-3)] hover:text-[var(--text)]">
-                <X className="w-3 h-3" />
+            {query && (
+              <button onClick={() => setQuery('')} className="nv-iconbtn nv-iconbtn--sm !h-5 !w-5">
+                <X className="h-3 w-3" />
               </button>
             )}
           </div>
         </div>
 
-        {/* Conversations List */}
-        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1.5">
-          {filtered.length === 0 ? (
-            <div className="py-12 text-center text-[var(--text-3)] font-mono text-[12px]">
-              No conversations found
+        <div className="nv-hair" />
+
+        {/* List */}
+        <div className="nv-scroll flex-1 overflow-y-auto px-2.5 py-2.5">
+          {groups.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-16">
+              <MessageSquare className="h-5 w-5" style={{ color: 'var(--text-4)' }} />
+              <span className="font-mono text-[12px]" style={{ color: 'var(--text-4)' }}>
+                No spaces found
+              </span>
             </div>
           ) : (
-            filtered.map((conv) => {
-              const isActive = conv.id === activeId;
-              const isEditing = editingId === conv.id;
+            groups.map((g) => (
+              <div key={g.label} className="mb-2">
+                <div className="nv-menu__label">{g.label}</div>
+                {g.items.map((c) => {
+                  const active = c.id === activeId;
+                  const isEditing = editingId === c.id;
+                  return (
+                    <div
+                      key={c.id}
+                      onClick={() => {
+                        if (isEditing) return;
+                        setActiveConversation(c.id);
+                        setSpacesMenuOpen(false);
+                      }}
+                      className="group/row relative flex cursor-pointer items-center gap-2.5 rounded-[10px] px-2.5 py-2.5 transition-colors"
+                      style={{
+                        background: active ? 'var(--glass-3)' : 'transparent',
+                        border: `1px solid ${active ? 'var(--line)' : 'transparent'}`,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!active) e.currentTarget.style.background = 'var(--glass-1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!active) e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      <span
+                        className="h-4 w-px shrink-0 rounded-full transition-colors"
+                        style={{ background: active ? 'var(--text)' : 'var(--line-strong)' }}
+                      />
 
-              return (
-                <div
-                  key={conv.id}
-                  onClick={() => {
-                    setActiveConversation(conv.id);
-                    setSpacesMenuOpen(false);
-                  }}
-                  className={`group relative p-3 rounded-[10px] border cursor-pointer transition-all flex items-start justify-between gap-2 ${
-                    isActive
-                      ? 'bg-[var(--elev-2)] border-[var(--text)] shadow-xs'
-                      : 'bg-transparent border-transparent hover:bg-[var(--elev-2)] hover:border-[var(--line)] text-[var(--text-2)]'
-                  }`}
-                >
-                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                    <MessageSquare
-                      className={`w-4 h-4 mt-0.5 shrink-0 ${
-                        isActive ? 'text-[var(--text)]' : 'text-[var(--text-3)]'
-                      }`}
-                    />
-                    <div className="min-w-0 flex-1">
-                      {isEditing ? (
-                        <div
-                          className="flex items-center gap-1.5"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <input
-                            type="text"
-                            value={editTitle}
-                            onChange={(e) => setEditTitle(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleSaveRename(conv.id);
-                              if (e.key === 'Escape') setEditingId(null);
-                            }}
-                            autoFocus
-                            className="w-full bg-[var(--elev-3)] text-[13px] px-2 py-0.5 rounded-[4px] border border-[var(--line-strong)] text-[var(--text)] outline-none"
-                          />
+                      <div className="min-w-0 flex-1">
+                        {isEditing ? (
+                          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              autoFocus
+                              value={draft}
+                              onChange={(e) => setDraft(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && draft.trim()) {
+                                  renameConversation(c.id, draft.trim());
+                                  setEditingId(null);
+                                }
+                                if (e.key === 'Escape') setEditingId(null);
+                              }}
+                              className="h-7 w-full rounded-[7px] px-2 text-[13px] outline-none"
+                              style={{ background: 'var(--glass-3)', border: '1px solid var(--line-bright)', color: 'var(--text)' }}
+                            />
+                            <button
+                              onClick={() => {
+                                if (draft.trim()) renameConversation(c.id, draft.trim());
+                                setEditingId(null);
+                              }}
+                              className="nv-iconbtn nv-iconbtn--sm !h-7 !w-7"
+                            >
+                              <Check className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <div
+                              className="truncate text-[13.5px] font-medium leading-tight tracking-[-0.006em]"
+                              style={{ color: active ? 'var(--text)' : 'var(--text-1)' }}
+                            >
+                              {c.title}
+                            </div>
+                            <div
+                              className="mt-1 font-mono text-[10px] tabular-nums"
+                              style={{ color: 'var(--text-4)' }}
+                            >
+                              {new Date(c.updated_at).toLocaleString([], {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {!isEditing && (
+                        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/row:opacity-100">
                           <button
-                            onClick={() => handleSaveRename(conv.id)}
-                            className="p-1 text-[var(--text)] hover:opacity-80"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              exportOne(c.id);
+                            }}
+                            className="nv-iconbtn nv-iconbtn--sm !h-7 !w-7"
+                            title="Export"
                           >
-                            <Check className="w-3.5 h-3.5" />
+                            <Download className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingId(c.id);
+                              setDraft(c.title);
+                            }}
+                            className="nv-iconbtn nv-iconbtn--sm !h-7 !w-7"
+                            title="Rename"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteConversation(c.id);
+                            }}
+                            className="nv-iconbtn nv-iconbtn--sm !h-7 !w-7"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
-                      ) : (
-                        <>
-                          <span
-                            className={`font-medium text-[13.5px] truncate block leading-tight ${
-                              isActive ? 'text-[var(--text)]' : 'text-[var(--text-2)] group-hover:text-[var(--text)]'
-                            }`}
-                          >
-                            {conv.title}
-                          </span>
-                          <span className="font-mono text-[10px] text-[var(--text-3)] mt-1 flex items-center gap-1">
-                            <Clock className="w-2.5 h-2.5" />
-                            {new Date(conv.updated_at).toLocaleDateString([], {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
-                        </>
                       )}
                     </div>
-                  </div>
-
-                  {/* Actions: Edit & Delete */}
-                  {!isEditing && (
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => handleStartRename(conv.id, conv.title, e)}
-                        className="p-1 rounded-[4px] hover:bg-[var(--elev-3)] text-[var(--text-3)] hover:text-[var(--text)]"
-                        title="Rename Chat"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteConversation(conv.id);
-                        }}
-                        className="p-1 rounded-[4px] hover:bg-[var(--elev-3)] text-[var(--text-3)] hover:text-[var(--text)]"
-                        title="Delete Chat"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })
+                  );
+                })}
+              </div>
+            ))
           )}
         </div>
 
-        {/* Footer info */}
-        <div className="p-3 px-4 border-t border-[var(--line)] bg-[var(--elev-2)] text-[11px] font-mono text-[var(--text-3)] flex items-center justify-between">
-          <span>{conversations.length} total spaces</span>
-          <span>Click to switch</span>
+        {/* Footer */}
+        <div
+          className="flex items-center justify-between px-4 py-3"
+          style={{ borderTop: '1px solid var(--line)' }}
+        >
+          <span className="nv-label !text-[9px]">Local · persisted</span>
+          <span className="flex items-center gap-1.5 nv-label !text-[9px]">
+            <span className="nv-kbd h-[16px] text-[9px]">esc</span> close
+          </span>
         </div>
       </aside>
     </div>

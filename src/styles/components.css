@@ -1,0 +1,1260 @@
+/* ============================================================================
+   NOEVIX — COMPONENT PRIMITIVES
+   A small, opinionated kit. Layered surfaces, gradient hairlines, real depth.
+   Everything lives in @layer components so Tailwind utilities can override.
+   ========================================================================== */
+
+@layer components {
+  /* ── Structure ───────────────────────────────────────────────────────── */
+
+  /* Gradient hairline that traces the element's radius. */
+  .nv-edge {
+    position: relative;
+  }
+  .nv-edge::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      180deg,
+      var(--line-bright) 0%,
+      var(--line) 26%,
+      var(--line-faint) 55%,
+      var(--line) 82%,
+      var(--line-strong) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0.9;
+  }
+
+  /* Fading rule. */
+  .nv-hair {
+    height: 1px;
+    width: 100%;
+    background: linear-gradient(90deg, transparent, var(--line) 16%, var(--line) 84%, transparent);
+  }
+  .nv-hair-strong {
+    background: linear-gradient(90deg, transparent, var(--line-strong) 12%, var(--line-strong) 88%, transparent);
+  }
+
+  /* A single bright filament across the top edge — reads as "lit". */
+  .nv-topline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 14%;
+    right: 14%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--highlight-top-strong), transparent);
+    pointer-events: none;
+  }
+
+  /* ── Surfaces ────────────────────────────────────────────────────────── */
+  .nv-panel {
+    position: relative;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface-1) 100%);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-3), var(--shadow-inset);
+  }
+
+  .nv-card {
+    position: relative;
+    border-radius: var(--radius-md);
+    background: var(--glass-1);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-1);
+    transition:
+      background var(--dur-2) var(--ease),
+      border-color var(--dur-2) var(--ease),
+      transform var(--dur-2) var(--ease),
+      box-shadow var(--dur-2) var(--ease);
+  }
+  .nv-card--interactive:hover {
+    background: var(--glass-2);
+    border-color: var(--line-strong);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-2);
+  }
+
+  .nv-well {
+    background: var(--glass-1);
+    border: 1px solid var(--line-faint);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+    border-radius: var(--radius-md);
+  }
+
+  .nv-glass {
+    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid var(--line);
+  }
+
+  /* ── Buttons ─────────────────────────────────────────────────────────── */
+  .nv-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: var(--control-h);
+    padding: 0 14px;
+    border-radius: var(--radius-md);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: -0.006em;
+    line-height: 1;
+    color: var(--text-1);
+    background: linear-gradient(180deg, var(--glass-2) 0%, var(--glass-1) 100%);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-1), var(--shadow-inset);
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background var(--dur-2) var(--ease),
+      border-color var(--dur-2) var(--ease),
+      color var(--dur-2) var(--ease),
+      transform var(--dur-1) var(--ease),
+      box-shadow var(--dur-2) var(--ease);
+  }
+  .nv-btn:hover:not(:disabled) {
+    color: var(--text);
+    border-color: var(--line-strong);
+    background: linear-gradient(180deg, var(--glass-3) 0%, var(--glass-2) 100%);
+    box-shadow: var(--shadow-2), var(--shadow-inset);
+  }
+  .nv-btn:active:not(:disabled) {
+    transform: translateY(0.5px) scale(0.986);
+    box-shadow: var(--shadow-1), inset 0 2px 4px rgba(0, 0, 0, 0.4);
+  }
+  .nv-btn:disabled {
+    opacity: 0.34;
+    cursor: not-allowed;
+  }
+  .nv-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ring-soft);
+  }
+
+  /* Primary — solid ink, inverted. The room's only pure-white object. */
+  .nv-btn--primary {
+    color: #000000;
+    font-weight: 600;
+    background: linear-gradient(180deg, #ffffff 0%, #e6e6e6 55%, #d2d2d2 100%);
+    border-color: rgba(255, 255, 255, 0.9);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.6),
+      0 8px 22px -10px rgba(255, 255, 255, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 1);
+  }
+  .nv-btn--primary:hover:not(:disabled) {
+    color: #000000;
+    border-color: #ffffff;
+    background: linear-gradient(180deg, #ffffff 0%, #f0f0f0 55%, #dedede 100%);
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.6),
+      0 14px 30px -10px rgba(255, 255, 255, 0.5),
+      inset 0 1px 0 #ffffff;
+  }
+  .nv-btn--primary:active:not(:disabled) {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6), inset 0 2px 5px rgba(0, 0, 0, 0.16);
+  }
+
+  /* Ghost — chrome-less, for icon rails and inline actions. */
+  .nv-btn--ghost {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    color: var(--text-2);
+  }
+  .nv-btn--ghost:hover:not(:disabled) {
+    background: var(--glass-2);
+    border-color: var(--line-faint);
+    box-shadow: none;
+  }
+
+  /* Outline — quiet, bordered. */
+  .nv-btn--outline {
+    background: transparent;
+    border-color: var(--line-strong);
+    box-shadow: none;
+  }
+
+  /* Danger-ish (monochrome expression: hollow + brighter ink on hover) */
+  .nv-btn--danger:hover:not(:disabled) {
+    color: var(--text);
+    border-color: var(--line-bright);
+    background: var(--glass-3);
+  }
+
+  .nv-btn--sm {
+    height: var(--control-h-sm);
+    padding: 0 10px;
+    font-size: 12px;
+    border-radius: var(--radius-sm);
+  }
+  .nv-btn--lg {
+    height: var(--control-h-lg);
+    padding: 0 18px;
+    font-size: 13.5px;
+  }
+
+  /* Icon button — perfect square, optically balanced. */
+  .nv-iconbtn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--control-h);
+    height: var(--control-h);
+    border-radius: var(--radius-md);
+    color: var(--text-2);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition:
+      color var(--dur-2) var(--ease),
+      background var(--dur-2) var(--ease),
+      border-color var(--dur-2) var(--ease),
+      transform var(--dur-1) var(--ease);
+  }
+  .nv-iconbtn:hover:not(:disabled) {
+    color: var(--text);
+    background: var(--glass-2);
+    border-color: var(--line-faint);
+  }
+  .nv-iconbtn:active:not(:disabled) {
+    transform: scale(0.94);
+  }
+  .nv-iconbtn--sm {
+    width: var(--control-h-sm);
+    height: var(--control-h-sm);
+    border-radius: var(--radius-sm);
+  }
+  .nv-iconbtn--round {
+    border-radius: var(--radius-full);
+    border-color: var(--line);
+    background: var(--glass-1);
+  }
+  .nv-iconbtn--round:hover:not(:disabled) {
+    background: var(--glass-3);
+    border-color: var(--line-strong);
+  }
+
+  /* ── Segmented control ──────────────────────────────────────────────── */
+  .nv-seg {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    border-radius: var(--radius-full);
+    background: var(--glass-1);
+    border: 1px solid var(--line);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+  }
+  .nv-seg__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 12px;
+    border-radius: var(--radius-full);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: -0.004em;
+    color: var(--text-3);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition:
+      color var(--dur-2) var(--ease),
+      background var(--dur-2) var(--ease),
+      border-color var(--dur-2) var(--ease);
+  }
+  .nv-seg__item:hover {
+    color: var(--text-1);
+  }
+  .nv-seg__item[data-active='true'] {
+    color: var(--text);
+    background: linear-gradient(180deg, var(--glass-4), var(--glass-2));
+    border-color: var(--line);
+    box-shadow: var(--shadow-1), var(--shadow-inset);
+  }
+
+  /* ── Pills & chips ──────────────────────────────────────────────────── */
+  .nv-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: var(--control-h-sm);
+    padding: 0 12px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-2);
+    background: var(--glass-1);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-1);
+    cursor: pointer;
+    transition:
+      color var(--dur-2) var(--ease),
+      background var(--dur-2) var(--ease),
+      border-color var(--dur-2) var(--ease),
+      transform var(--dur-1) var(--ease);
+  }
+  .nv-pill:hover {
+    color: var(--text);
+    background: var(--glass-3);
+    border-color: var(--line-strong);
+    transform: translateY(-1px);
+  }
+  .nv-pill[data-active='true'] {
+    color: var(--text);
+    background: linear-gradient(180deg, var(--glass-4), var(--glass-2));
+    border-color: var(--line-bright);
+  }
+
+  .nv-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: var(--radius-xs);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    background: var(--glass-2);
+    border: 1px solid var(--line-faint);
+  }
+
+  .nv-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 20px;
+    padding: 0 8px;
+    border-radius: var(--radius-full);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-2);
+    background: var(--glass-2);
+    border: 1px solid var(--line);
+  }
+  .nv-badge--solid {
+    color: #000000;
+    background: var(--text);
+    border-color: transparent;
+  }
+
+  /* ── Fields ─────────────────────────────────────────────────────────── */
+  .nv-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: var(--control-h);
+    padding: 0 12px;
+    border-radius: var(--radius-md);
+    background: var(--glass-1);
+    border: 1px solid var(--line);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+    transition:
+      border-color var(--dur-2) var(--ease),
+      box-shadow var(--dur-2) var(--ease),
+      background var(--dur-2) var(--ease);
+  }
+  .nv-field:focus-within {
+    background: var(--glass-2);
+    border-color: var(--line-bright);
+    box-shadow: 0 0 0 3px var(--ring-soft), inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+  .nv-field input,
+  .nv-field textarea {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    color: var(--text);
+  }
+  .nv-field input::placeholder,
+  .nv-field textarea::placeholder {
+    color: var(--text-3);
+  }
+
+  /* ── Keyboard key ───────────────────────────────────────────────────── */
+  .nv-kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: var(--radius-xs);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--text-2);
+    background: linear-gradient(180deg, var(--glass-3), var(--glass-1));
+    border: 1px solid var(--line);
+    border-bottom-color: var(--line-strong);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45), var(--shadow-inset);
+  }
+
+  /* ── Tabs ───────────────────────────────────────────────────────────── */
+  .nv-tabs {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .nv-tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: -0.004em;
+    color: var(--text-3);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    transition: color var(--dur-2) var(--ease), background var(--dur-2) var(--ease);
+  }
+  .nv-tab:hover {
+    color: var(--text-1);
+    background: var(--glass-1);
+  }
+  .nv-tab[data-active='true'] {
+    color: var(--text);
+    background: var(--glass-2);
+    box-shadow: var(--shadow-inset);
+  }
+
+  /* Underline variant */
+  .nv-tabline {
+    position: relative;
+    height: 38px;
+    padding: 0 2px;
+    margin: 0 12px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid transparent;
+    cursor: pointer;
+    transition: color var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease);
+  }
+  .nv-tabline:hover {
+    color: var(--text-1);
+  }
+  .nv-tabline[data-active='true'] {
+    color: var(--text);
+    border-bottom-color: var(--text);
+  }
+
+  /* ── Menu ───────────────────────────────────────────────────────────── */
+  .nv-menu {
+    padding: 6px;
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--surface-2) 92%, transparent);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid var(--line-strong);
+    box-shadow: var(--shadow-4);
+    animation: nv-pop var(--dur-2) var(--ease);
+    transform-origin: var(--menu-origin, top left);
+  }
+  .nv-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--text-2);
+    text-align: left;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    transition: color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
+  }
+  .nv-menu__item:hover {
+    color: var(--text);
+    background: var(--glass-3);
+  }
+  .nv-menu__item[data-active='true'] {
+    color: var(--text);
+    background: var(--glass-3);
+    box-shadow: var(--shadow-inset);
+  }
+  .nv-menu__sep {
+    height: 1px;
+    margin: 5px 6px;
+    background: var(--line-faint);
+  }
+  .nv-menu__label {
+    padding: 6px 10px 4px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-4);
+  }
+
+  /* ── Modal ──────────────────────────────────────────────────────────── */
+  .nv-scrim {
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(120% 80% at 50% 0%, var(--scrim-a) 0%, var(--scrim-b) 72%);
+    backdrop-filter: blur(18px) saturate(120%);
+    -webkit-backdrop-filter: blur(18px) saturate(120%);
+    animation: nv-fade var(--dur-3) var(--ease);
+  }
+  .nv-modal {
+    position: relative;
+    border-radius: var(--radius-2xl);
+    background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface-1) 100%);
+    border: 1px solid var(--line-strong);
+    box-shadow: var(--shadow-4), var(--shadow-inset);
+    animation: nv-modal-in var(--dur-3) var(--ease-out);
+    overflow: hidden;
+  }
+
+  /* ── Progress / meters ──────────────────────────────────────────────── */
+  .nv-meter {
+    position: relative;
+    height: 3px;
+    width: 100%;
+    border-radius: var(--radius-full);
+    background: var(--glass-3);
+    overflow: hidden;
+  }
+  .nv-meter__fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--text-3), var(--text));
+    transition: width var(--dur-4) var(--ease);
+  }
+  .nv-meter--sweep::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    width: 40%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, transparent, var(--text), transparent);
+    animation: nv-sweep 1.5s var(--ease-in-out) infinite;
+    opacity: 0.7;
+  }
+
+  /* ── Status dot ─────────────────────────────────────────────────────── */
+  .nv-dot {
+    position: relative;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--text-2);
+    flex-shrink: 0;
+  }
+  .nv-dot--live {
+    background: var(--text);
+  }
+  .nv-dot--live::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: inherit;
+    animation: nv-halo 1.8s var(--ease-out) infinite;
+  }
+
+  /* ── Typography helpers ─────────────────────────────────────────────── */
+  .nv-display {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    letter-spacing: -0.022em;
+    line-height: 1.02;
+    color: var(--text);
+  }
+  .nv-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-4);
+  }
+  .nv-num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  /* ── Texture ────────────────────────────────────────────────────────── */
+  .nv-grain {
+    position: fixed;
+    inset: -50%;
+    z-index: 1;
+    pointer-events: none;
+    opacity: var(--grain-opacity);
+    mix-blend-mode: var(--grain-blend);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Vignette + faint energy bloom driven by --energy */
+  .nv-vignette {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        62% 46% at 50% 108%,
+        rgba(255, 255, 255, calc(var(--energy) * 0.09)) 0%,
+        transparent 68%
+      ),
+      radial-gradient(120% 120% at 50% -10%, rgba(255, 255, 255, 0.015) 0%, transparent 60%),
+      radial-gradient(120% 110% at 50% 50%, transparent 52%, rgba(0, 0, 0, 0.42) 100%);
+    transition: background 600ms linear;
+  }
+  html.light .nv-vignette {
+    background:
+      radial-gradient(62% 46% at 50% 108%, rgba(0, 0, 0, calc(var(--energy) * 0.05)) 0%, transparent 68%),
+      radial-gradient(100% 100% at 50% 50%, transparent 48%, rgba(0, 0, 0, 0.05) 100%);
+  }
+
+  /* Fine dotted grid backdrop */
+  .nv-grid {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.4;
+    background-image: radial-gradient(var(--line-faint) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: radial-gradient(90% 70% at 50% 40%, #000 0%, transparent 78%);
+    -webkit-mask-image: radial-gradient(90% 70% at 50% 40%, #000 0%, transparent 78%);
+  }
+
+  /* ── Scrollbars ─────────────────────────────────────────────────────── */
+  .nv-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+  .nv-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .nv-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .nv-scroll::-webkit-scrollbar-thumb {
+    background-color: var(--line);
+    border-radius: var(--radius-full);
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  .nv-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: var(--line-strong);
+  }
+  .nv-scroll-x {
+    scrollbar-width: none;
+  }
+  .nv-scroll-x::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ── Spotlight (pointer-tracked sheen) ──────────────────────────────── */
+  .nv-spotlight::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+      340px circle at var(--mouse-x) var(--mouse-y),
+      var(--glass-4),
+      transparent 62%
+    );
+    opacity: 0;
+    transition: opacity var(--dur-3) var(--ease);
+    pointer-events: none;
+  }
+  .nv-spotlight:hover::before {
+    opacity: 1;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+     MARKETING KIT — surfaces that carry the narrative
+     ══════════════════════════════════════════════════════════════════════ */
+
+  /* Square identity tile. Used for nav items, capability marks, plane letters. */
+  .nv-tile {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 34px;
+    width: 34px;
+    flex: none;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(180deg, var(--surface-3), var(--surface-1));
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-inset), var(--shadow-1);
+    color: var(--text-2);
+    transition:
+      color var(--dur-2) var(--ease),
+      border-color var(--dur-2) var(--ease),
+      background var(--dur-2) var(--ease);
+  }
+  .nv-tile--lg {
+    height: 44px;
+    width: 44px;
+    border-radius: var(--radius-md);
+  }
+  .nv-tile--ghost {
+    background: var(--glass-1);
+    box-shadow: none;
+  }
+  .nv-tile--solid {
+    background: var(--text);
+    border-color: transparent;
+    color: var(--bg);
+    box-shadow: var(--shadow-2);
+  }
+  *:hover > .nv-tile,
+  .nv-tile--active {
+    color: var(--text);
+    border-color: var(--line-strong);
+  }
+
+  /* Horizontal rule that dissolves toward both ends — used between bands. */
+  .nv-rule {
+    height: 1px;
+    width: 100%;
+    background: linear-gradient(90deg, transparent, var(--line-strong) 18%, var(--line-strong) 82%, transparent);
+  }
+  .nv-rule--tight {
+    background: linear-gradient(90deg, var(--line), transparent 80%);
+  }
+
+  /* Deterministic monochrome sparkline. 24 hairline columns. */
+  .nv-spark {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 34px;
+  }
+  .nv-spark i {
+    display: block;
+    flex: 1;
+    min-width: 2px;
+    border-radius: 1px;
+    background: var(--line-strong);
+    transition: background var(--dur-2) var(--ease);
+  }
+  .nv-spark i[data-hot='true'] {
+    background: var(--text);
+  }
+
+  /* Window frame — the app replica in the live demo. */
+  .nv-frame {
+    position: relative;
+    border-radius: var(--radius-xl);
+    background: linear-gradient(180deg, var(--surface-2), var(--surface-1));
+    box-shadow: var(--shadow-4);
+  }
+  .nv-frame__glow {
+    position: absolute;
+    inset: -10% -3% -14%;
+    z-index: -1;
+    border-radius: 50%;
+    background: radial-gradient(50% 50% at 50% 50%, rgba(255, 255, 255, 0.07), transparent 72%);
+    filter: blur(70px);
+    pointer-events: none;
+  }
+  html.light .nv-frame__glow {
+    background: radial-gradient(50% 50% at 50% 50%, rgba(0, 0, 0, 0.06), transparent 72%);
+  }
+
+  /* Diagonal hatch — decorative fill, no colour, just texture. */
+  .nv-hatch {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      var(--line-faint) 0 1px,
+      transparent 1px 7px
+    );
+  }
+
+  /* Nav links + dropdown panels */
+  .nv-navlink {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: var(--control-h-sm);
+    padding: 0 10px;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    color: var(--text-2);
+    transition:
+      color var(--dur-2) var(--ease),
+      background var(--dur-2) var(--ease);
+  }
+  .nv-navlink:hover,
+  .nv-navlink[data-open='true'] {
+    color: var(--text);
+    background: var(--glass-2);
+  }
+  .nv-navpop {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 60;
+    width: 320px;
+    padding: 6px;
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--elev-3) 92%, transparent);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-4);
+    backdrop-filter: blur(22px) saturate(150%);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+    animation: nv-pop-center 150ms var(--ease-out) both;
+  }
+  .nv-navpop__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 9px 10px;
+    border-radius: var(--radius-sm);
+    text-align: left;
+    transition: background var(--dur-2) var(--ease);
+  }
+  .nv-navpop__item:hover {
+    background: var(--glass-2);
+  }
+  .nv-navpop__item:hover .nv-tile {
+    color: var(--text);
+    border-color: var(--line-strong);
+  }
+
+  /* Lift on hover — used for cards that should feel physical. */
+  .nv-lift {
+    transition:
+      transform var(--dur-3) var(--ease),
+      border-color var(--dur-3) var(--ease),
+      box-shadow var(--dur-3) var(--ease),
+      background var(--dur-3) var(--ease);
+  }
+  .nv-lift:hover {
+    transform: translateY(-2px);
+    border-color: var(--line-strong);
+    box-shadow: var(--shadow-3);
+  }
+
+  /* Oversized decorative quotation mark. */
+  .nv-quotemark {
+    font-family: var(--font-serif);
+    font-size: 120px;
+    line-height: 0.6;
+    color: var(--text);
+    opacity: 0.1;
+    user-select: none;
+  }
+}
+
+/* ── Legacy aliases — keep older surfaces consistent with the new kit ──── */
+@layer components {
+  .font-serif-display {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    letter-spacing: -0.022em;
+    line-height: 1.05;
+  }
+  .font-mono-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-4);
+  }
+  .dock-outer-glow {
+    box-shadow: var(--dock-shadow), 0 0 0 1px var(--line-strong);
+  }
+  .status-line-track {
+    position: relative;
+    height: 2px;
+    width: 100%;
+    background: var(--line);
+    overflow: hidden;
+    border-radius: var(--radius-full);
+  }
+  .status-line-indicator {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 40%;
+    border-radius: var(--radius-full);
+    background: linear-gradient(90deg, transparent, var(--text), transparent);
+    animation: nv-sweep 1.5s var(--ease-in-out) infinite;
+  }
+  .word-reveal-fresh {
+    display: inline-block;
+    animation: nv-word 220ms var(--ease-out) both;
+  }
+  .code-token-keyword {
+    font-weight: 600;
+    color: var(--text);
+  }
+  .code-token-string {
+    color: var(--text-1);
+  }
+  .code-token-comment {
+    color: var(--text-3);
+    font-style: italic;
+  }
+  .code-token-function {
+    font-weight: 500;
+    color: var(--text);
+  }
+  .code-token-variable {
+    color: var(--text-1);
+  }
+  .spotlight-card {
+    position: relative;
+    overflow: hidden;
+    background: var(--glass-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+  }
+  .spotlight-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+      340px circle at var(--mouse-x) var(--mouse-y),
+      var(--glass-4),
+      transparent 62%
+    );
+    opacity: 0;
+    transition: opacity var(--dur-3) var(--ease);
+    pointer-events: none;
+  }
+  .spotlight-card:hover::before {
+    opacity: 1;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LIGHT-MODE INVERSIONS
+   In the dark room the primary control is the only pure-white object. On
+   paper that polarity must flip, otherwise it dissolves into the canvas.
+   Every rule here is a strict black/white swap — no hue is introduced.
+   ══════════════════════════════════════════════════════════════════════════ */
+@layer components {
+  html.light .nv-btn--primary {
+    color: #ffffff;
+    background: linear-gradient(180deg, #1c1c1c 0%, #050505 60%, #000000 100%);
+    border-color: rgba(0, 0, 0, 0.9);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.22),
+      0 8px 22px -10px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  }
+  html.light .nv-btn--primary:hover:not(:disabled) {
+    color: #ffffff;
+    border-color: #000000;
+    background: linear-gradient(180deg, #2a2a2a 0%, #0d0d0d 60%, #000000 100%);
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.26),
+      0 14px 30px -10px rgba(0, 0, 0, 0.45),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  html.light .nv-btn--primary:active:not(:disabled) {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 2px 5px rgba(0, 0, 0, 0.5);
+  }
+
+  html.light .nv-badge--solid {
+    color: #ffffff;
+    background: #000000;
+  }
+
+  /* Filled status marks (audit dots, gate chips) must stay legible on paper. */
+  html.light .nv-dot--live {
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE GEOMETRY
+   Overflow is already impossible — no band escapes its own box at any width
+   from 320px to 2560px. What follows is about *fit*: hit areas that a finger
+   can land on, label sizes that survive a phone at arm's length, and panels
+   that clamp to the viewport instead of relying on the page never scrolling.
+   ══════════════════════════════════════════════════════════════════════════ */
+@layer components {
+  /* ── Tablet ───────────────────────────────────────────────────────────── */
+  @media (max-width: 1023px) {
+    .nv-seg__item {
+      height: 36px;
+      padding: 0 13px;
+    }
+    .nv-tab {
+      height: var(--control-h-sm);
+    }
+    .nv-navlink {
+      height: var(--control-h-sm);
+    }
+    /* A dropdown must never be wider than the screen that opened it, and it
+       is anchored to its trigger's left edge rather than centred on it —
+       centring a 320px panel on a trigger near the gutter would push it past
+       the left edge of a tablet.
+
+       `animation-name` has to be reset too: the desktop `nv-pop-center`
+       keyframe ends on `translate(-50%)` with `fill-mode: both`, and an
+       animation's fill value outranks a normal `transform` declaration —
+       without this the panel stays shifted half a width to the left. */
+    .nv-navpop {
+      left: 0;
+      transform: none;
+      animation-name: nv-pop;
+      width: min(320px, calc(100vw - 24px));
+    }
+  }
+
+  /* ── Phone ────────────────────────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .nv-seg__item {
+      height: 36px;
+      padding: 0 14px;
+      font-size: 12.5px;
+    }
+    /* Uppercase mono labels are the smallest type in the system, and on a
+       phone they are read at arm's length. `components` is declared before
+       `utilities`, and for `!important` declarations the earlier layer wins —
+       so this also overrides the per-surface `!text-[9px]` overrides those
+       surfaces apply at desktop density. */
+    .nv-label,
+    .font-mono-label,
+    .nv-badge,
+    .nv-chip {
+      font-size: 11px !important;
+    }
+    .nv-navpop__item {
+      padding: 11px 10px;
+    }
+    .nv-quotemark {
+      font-size: 84px;
+    }
+    /* Every tappable row in a stacked list gets a finger's worth of height. */
+    .nv-menu__item {
+      min-height: 40px;
+    }
+  }
+
+  /* ── Small phone (320–380px) ──────────────────────────────────────────── */
+  @media (max-width: 380px) {
+    .nv-quotemark {
+      font-size: 64px;
+    }
+    .nv-navlink {
+      padding: 0 8px;
+    }
+  }
+}
+
+/* ── Keyframes (outside layers so they are always available) ───────────── */
+@keyframes nv-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes nv-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+/* Same motion, but preserves the horizontal centering transform. */
+@keyframes nv-pop-center {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+@keyframes nv-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes nv-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes nv-sweep {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+@keyframes nv-halo {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+@keyframes nv-word {
+  0% {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateY(3px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+@keyframes nv-caret {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0.1;
+  }
+}
+@keyframes nv-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes nv-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ── Small animation utilities ────────────────────────────────────────── */
+.anim-rise {
+  animation: nv-rise var(--dur-4) var(--ease-out) both;
+}
+.anim-fade {
+  animation: nv-fade var(--dur-3) var(--ease) both;
+}
+.nv-word {
+  display: inline-block;
+  animation: nv-word 220ms var(--ease-out) both;
+}
+.nv-caret {
+  display: inline-block;
+  width: 0.5ch;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--text);
+  animation: nv-caret 1.05s steps(1) infinite;
+}
+.nv-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--text-4) 0%,
+    var(--text-2) 50%,
+    var(--text-4) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: nv-shimmer 2.4s linear infinite;
+}
+.nv-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--line-strong);
+  border-top-color: var(--text);
+  animation: nv-spin 0.7s linear infinite;
+}
+.nv-spin {
+  animation: nv-spin 0.7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

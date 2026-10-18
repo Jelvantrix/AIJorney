@@ -1,147 +1,241 @@
 import React, { useState } from 'react';
 import { useChatStore } from '../../lib/store.ts';
-import { Aura, AuraState } from '../aura/Aura.tsx';
+import { Aura, type AuraState } from '../aura/Aura.tsx';
 import { applyTheme, getStoredTheme, setStoredTheme } from '../../lib/theme.ts';
-import { ArrowLeft, Play, RefreshCw, AlertCircle, Sun, Moon, Sparkles, Sliders } from 'lucide-react';
+import { ArrowLeft, Play, RefreshCw, Sun, Moon, Sparkles, FlaskConical } from 'lucide-react';
+
+const STATES: AuraState[] = ['idle', 'typing', 'thinking', 'streaming', 'error', 'done'];
+
+const SCENARIOS = [
+  { label: 'Fast inference', meta: '5ms / token', prompt: 'Write a quick algorithm', scenario: 'fast' },
+  { label: 'Deep reasoning', meta: 'slow profile', prompt: 'Prove a mathematical theorem', scenario: 'slow' },
+  { label: 'Tool interleave', meta: 'search / read / exec', prompt: 'Search distributed consensus papers', scenario: 'tool_use' },
+  { label: 'Mid-stream cut', meta: 'disconnect', prompt: 'Simulate stream interruption', scenario: 'mid_stream_disconnect' },
+  { label: 'Upstream 500', meta: 'server error', prompt: 'Trigger error scenario', scenario: 'error' },
+  { label: 'Rate limited', meta: '429', prompt: 'Trigger rate limit scenario', scenario: 'rate_limit' },
+];
+
+const Panel: React.FC<{ title: string; subtitle?: string; right?: React.ReactNode; children: React.ReactNode }> = ({
+  title,
+  subtitle,
+  right,
+  children,
+}) => (
+  <section
+    className="nv-edge overflow-hidden rounded-[18px]"
+    style={{
+      background: 'linear-gradient(180deg, var(--surface-2), var(--surface-1))',
+      border: '1px solid transparent',
+      boxShadow: 'var(--shadow-3)',
+    }}
+  >
+    <header
+      className="flex items-center justify-between gap-3 px-5 py-4"
+      style={{ borderBottom: '1px solid var(--line)' }}
+    >
+      <div className="flex items-center gap-2.5">
+        <span
+          className="h-3.5 w-[2px] rounded-full"
+          style={{ background: 'linear-gradient(180deg, var(--line-bright), var(--line))' }}
+        />
+        <div>
+          <h2 className="font-mono text-[10px] font-medium uppercase tracking-[0.13em]" style={{ color: 'var(--text-1)' }}>
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="mt-0.5 font-mono text-[10px]" style={{ color: 'var(--text-4)' }}>
+              {subtitle}
+            </p>
+          )}
+        </div>
+      </div>
+      {right}
+    </header>
+    <div className="p-5">{children}</div>
+  </section>
+);
 
 export const AuraLab: React.FC = () => {
   const { setCurrentView, reduceEffects, setReduceEffects, sendMessage } = useChatStore();
-  const [selectedState, setSelectedState] = useState<AuraState>('idle');
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    return document.documentElement.classList.contains('light') ? 'light' : 'dark';
-  });
+  const [state, setState] = useState<AuraState>('idle');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() =>
+    document.documentElement.classList.contains('light') ? 'light' : 'dark'
+  );
 
-  const handleThemeChange = (newTheme: 'dark' | 'light') => {
-    setTheme(newTheme);
-    setStoredTheme(newTheme);
-    applyTheme(newTheme);
+  const pick = (t: 'dark' | 'light') => {
+    setTheme(t);
+    setStoredTheme(t);
+    applyTheme(t);
   };
 
-  const states: AuraState[] = ['idle', 'typing', 'thinking', 'streaming', 'error', 'done'];
-
   return (
-    <div className="relative min-h-screen w-full bg-[var(--bg)] text-[var(--text)] flex flex-col overflow-hidden">
-      {/* Isolated Aura Background with forced state */}
-      <Aura forcedState={selectedState} />
+    <div className="relative flex min-h-screen w-full flex-col overflow-hidden" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
+      <Aura forcedState={state} />
+      <div className="nv-grid" aria-hidden />
 
-      {/* Top Header */}
-      <header className="relative z-10 h-14 px-6 border-b border-[var(--line)] flex items-center justify-between backdrop-blur-md bg-[var(--bg)]/70">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setCurrentView('app')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-[9999px] border border-[var(--line)] text-[13px] hover:bg-[var(--elev-1)] transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Return to App</span>
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <header
+        className="nv-topline relative z-10 flex h-[64px] shrink-0 items-center justify-between px-5 sm:px-8"
+        style={{
+          borderBottom: '1px solid var(--line)',
+          background: 'color-mix(in srgb, var(--bg) 80%, transparent)',
+          backdropFilter: 'blur(16px) saturate(140%)',
+          WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <button onClick={() => setCurrentView('app')} className="nv-btn nv-btn--sm">
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Workspace
           </button>
-          <span className="font-serif-display text-2xl tracking-tight">Noevix Aura Laboratory</span>
-          <span className="font-mono-label px-2 py-0.5 rounded-[4px] bg-[var(--elev-2)]">Isolated Testbed</span>
+          <span
+            className="flex h-8 w-8 items-center justify-center rounded-[10px]"
+            style={{ background: 'var(--glass-2)', border: '1px solid var(--line)', boxShadow: 'var(--shadow-inset)' }}
+          >
+            <FlaskConical className="h-4 w-4" style={{ color: 'var(--text-2)' }} />
+          </span>
+          <div>
+            <div className="nv-display text-[19px] leading-none">Aura laboratory</div>
+            <div className="nv-label mt-1 !text-[9px]">Isolated reactive backdrop testbed</div>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Theme Switcher */}
-          <button
-            onClick={() => handleThemeChange(theme === 'dark' ? 'light' : 'dark')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-[9999px] border border-[var(--line)] text-[12px] hover:bg-[var(--elev-1)] transition-colors"
-          >
-            {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-            <span className="capitalize">{theme} Theme</span>
+          <span className="nv-chip hidden sm:inline-flex">state · {state}</span>
+          <button onClick={() => pick(theme === 'dark' ? 'light' : 'dark')} className="nv-btn nv-btn--sm">
+            {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+            <span className="capitalize">{theme}</span>
           </button>
         </div>
       </header>
 
-      {/* Main Lab Controls Grid */}
-      <main className="relative z-10 flex-1 max-w-4xl mx-auto w-full p-8 flex flex-col justify-center gap-8">
-        {/* State Selector */}
-        <div className="p-6 rounded-[16px] bg-[var(--elev-1)] border border-[var(--line)] backdrop-blur-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-medium">Aura State Machine</h2>
-              <p className="text-[13px] text-[var(--text-2)] mt-0.5">
-                Inspect how the GPU-accelerated monochrome blooms and dock highlights respond to system states.
-              </p>
-            </div>
-            <span className="font-mono-label px-2.5 py-1 rounded-[6px] border border-[var(--line-strong)]">
-              STATE: {selectedState.toUpperCase()}
+      {/* ── Body ───────────────────────────────────────────────── */}
+      <main className="relative z-10 mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 p-5 sm:p-8">
+        <Panel
+          title="State machine"
+          subtitle="A single scalar drives the bloom behind the interface"
+          right={
+            <span className="nv-chip">
+              <Sparkles className="h-3 w-3" />
+              {state}
             </span>
-          </div>
-
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-            {states.map((st) => (
+          }
+        >
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+            {STATES.map((st) => (
               <button
                 key={st}
-                onClick={() => setSelectedState(st)}
-                className={`py-3 px-2 rounded-[10px] text-[13px] font-mono capitalize transition-all border ${
-                  selectedState === st
-                    ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)] font-semibold shadow-sm'
-                    : 'bg-[var(--elev-2)] text-[var(--text-2)] border-[var(--line)] hover:text-[var(--text)] hover:border-[var(--line-strong)]'
-                }`}
+                onClick={() => setState(st)}
+                data-active={state === st}
+                className="nv-seg__item !h-11 justify-center capitalize"
+                style={state === st ? undefined : { background: 'var(--glass-1)', borderColor: 'var(--line-faint)' }}
               >
                 {st}
               </button>
             ))}
           </div>
-        </div>
 
-        {/* Live Simulation Dock Replica */}
-        <div className="p-8 rounded-[24px] bg-[var(--elev-1)] border border-[var(--line)] flex flex-col items-center justify-center min-h-[220px]">
-          <span className="font-mono-label mb-4">Edge Light Conic Rotating Border Simulation</span>
-          
-          <div className="relative w-full max-w-lg p-5 rounded-[16px] bg-[var(--elev-2)] dock-aura-border dock-outer-glow flex items-center justify-between">
-            <span className="text-[14px] text-[var(--text-2)]">
-              Simulated composer dock in &ldquo;{selectedState}&rdquo; mode
+          <div className="mt-5 flex items-center gap-4">
+            <span className="nv-label shrink-0">Energy</span>
+            <span className="nv-meter">
+              <span
+                className="nv-meter__fill"
+                style={{
+                  width:
+                    state === 'streaming' ? '88%'
+                    : state === 'thinking' ? '72%'
+                    : state === 'typing' ? '52%'
+                    : state === 'error' ? '100%'
+                    : '25%',
+                  transition: 'width 600ms var(--ease)',
+                }}
+              />
             </span>
-            <div className="w-7 h-7 rounded-full bg-[var(--text)] text-[var(--bg)] flex items-center justify-center text-xs font-semibold">
-              ↑
+            <span className="nv-num shrink-0 text-[10.5px]" style={{ color: 'var(--text-4)' }}>
+              --energy
+            </span>
+          </div>
+        </Panel>
+
+        <Panel title="Dock replica" subtitle="Composer chrome rendered under the active aura state">
+          <div className="flex flex-col items-center justify-center gap-4 py-6">
+            <div
+              className="nv-edge flex w-full max-w-lg items-center justify-between rounded-[18px] p-3 pl-4"
+              style={{
+                background: 'linear-gradient(180deg, var(--surface-3), var(--surface-1))',
+                border: '1px solid transparent',
+                boxShadow: 'var(--dock-shadow)',
+              }}
+            >
+              <span className="truncate text-[13.5px]" style={{ color: 'var(--text-3)' }}>
+                Simulated composer · {state} mode
+              </span>
+              <span
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                style={{ background: 'var(--text)', color: 'var(--bg)' }}
+              >
+                <Play className="h-3.5 w-3.5 fill-current" />
+              </span>
             </div>
+            <span className="nv-label !text-[9px]">Grain, bloom and vignette are live behind this panel</span>
           </div>
-        </div>
+        </Panel>
 
-        {/* Settings & Accessibility Toggles */}
-        <div className="p-6 rounded-[16px] bg-[var(--elev-1)] border border-[var(--line)] flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <span className="text-[14px] font-medium block">Reduce Effects</span>
-            <span className="text-[12px] text-[var(--text-2)]">
-              Disables SVG grain overlay and rotating conic sweep for low-power devices.
-            </span>
+        <Panel title="Accessibility" subtitle="Performance and motion controls">
+          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+              <div className="text-[13px] font-medium" style={{ color: 'var(--text)' }}>
+                Damp ambient motion
+              </div>
+              <div className="mt-0.5 text-[11.5px]" style={{ color: 'var(--text-3)' }}>
+                Disables the grain overlay and the reactive bloom for low-power devices.
+              </div>
+            </div>
+            <button
+              onClick={() => setReduceEffects(!reduceEffects)}
+              role="switch"
+              aria-checked={reduceEffects}
+              className="nv-btn nv-btn--sm shrink-0"
+              style={
+                reduceEffects
+                  ? { color: 'var(--bg)', background: 'var(--text)', borderColor: 'transparent' }
+                  : undefined
+              }
+            >
+              {reduceEffects ? 'Reduced' : 'Full cinematic'}
+            </button>
           </div>
-          <button
-            onClick={() => setReduceEffects(!reduceEffects)}
-            className={`px-4 py-2 rounded-[9999px] text-[13px] border transition-colors ${
-              reduceEffects
-                ? 'bg-[var(--text)] text-[var(--bg)] border-[var(--text)]'
-                : 'border-[var(--line)] hover:bg-[var(--elev-2)] text-[var(--text)]'
-            }`}
-          >
-            {reduceEffects ? 'Effects Reduced (Active)' : 'Full Cinematic Effects'}
-          </button>
-        </div>
+        </Panel>
 
-        {/* Scripted Scenarios Quick Test */}
-        <div className="p-6 rounded-[16px] bg-[var(--elev-1)] border border-[var(--line)]">
-          <h3 className="text-[14px] font-medium mb-3">Trigger SSE Backend Mock Scenarios</h3>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { label: 'Fast Inference (5ms/token)', prompt: 'Write quick algorithm', scenario: 'fast' },
-              { label: 'Deep Reasoning (Slow)', prompt: 'Prove mathematical theorem', scenario: 'slow' },
-              { label: 'Tool Status (Search/Read/Exec)', prompt: 'Search distributed consensus papers', scenario: 'tool_use' },
-              { label: 'Mid-Stream Disconnect', prompt: 'Simulate stream interruption', scenario: 'mid_stream_disconnect' },
-              { label: 'Upstream Error (500)', prompt: 'Trigger error scenario', scenario: 'error' },
-              { label: 'Rate Limited (429)', prompt: 'Trigger rate limit scenario', scenario: 'rate_limit' },
-            ].map((sc) => (
+        <Panel title="Backend scenarios" subtitle="Dispatch a scripted SSE stream into the workspace">
+          <div className="grid gap-2 sm:grid-cols-2">
+            {SCENARIOS.map((sc) => (
               <button
                 key={sc.scenario}
                 onClick={() => {
                   setCurrentView('app');
                   sendMessage(sc.prompt, [], sc.scenario);
                 }}
-                className="px-3 py-2 rounded-[8px] bg-[var(--elev-2)] border border-[var(--line)] text-[12px] font-mono text-[var(--text-2)] hover:text-[var(--text)] hover:border-[var(--line-strong)] transition-all"
+                className="nv-card nv-card--interactive group flex items-center gap-3 px-3.5 py-3 text-left"
               >
-                {sc.label}
+                <span
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px]"
+                  style={{ background: 'var(--glass-2)', border: '1px solid var(--line-faint)' }}
+                >
+                  <RefreshCw className="h-3.5 w-3.5" style={{ color: 'var(--text-3)' }} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[12.5px] font-medium" style={{ color: 'var(--text)' }}>
+                    {sc.label}
+                  </span>
+                  <span className="mt-0.5 block font-mono text-[10px]" style={{ color: 'var(--text-4)' }}>
+                    {sc.meta}
+                  </span>
+                </span>
               </button>
             ))}
           </div>
-        </div>
+        </Panel>
       </main>
     </div>
   );

@@ -49,7 +49,7 @@ export interface ArtifactItem {
   content: string;
 }
 
-export type ViewMode = 'app' | 'marketing' | 'lab';
+export type ViewMode = 'app' | 'marketing' | 'lab' | 'missions';
 
 interface ChatState {
   currentView: ViewMode;

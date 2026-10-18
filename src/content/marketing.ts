@@ -175,4 +175,106 @@ By ensuring capacity is a power of two, index wrapping incurs a single \`AND\` i
       a: 'Spaces are structured as acyclic trees. When you edit a previous prompt or regenerate an answer, a new branch is created. Use the 1 / 2 version switcher in the left margin to toggle between branches at any time without losing history.',
     },
   ],
+
+  /* ══════════════════════════════════════════════════════════════════════
+     NAVIGATION
+     ══════════════════════════════════════════════════════════════════════ */
+  nav: [
+    {
+      label: 'Product',
+      items: [
+        { label: 'Live stage', desc: 'The unified synthesis workspace, rendering now', href: '#demo' },
+        { label: 'Capabilities', desc: 'Five specialised roles behind one calm voice', href: '#capabilities' },
+        { label: 'Autonomy ladder', desc: 'L0 to L4, and what unlocks each rung', href: '#governance' },
+        { label: 'Comparison', desc: 'Assisted output versus provable output', href: '#compare' },
+        { label: 'Plans', desc: 'What each tier actually changes', href: '#pricing' },
+      ],
+    },
+    {
+      label: 'Solutions',
+      items: [
+        { label: 'Engineering', desc: 'Concurrency, distributed systems, zero-allocation', href: '#capabilities' },
+        { label: 'Design', desc: 'Token architectures and typographic constitutions', href: '#capabilities' },
+        { label: 'Research', desc: 'Literature synthesis with causal analysis', href: '#capabilities' },
+        { label: 'Writing', desc: 'RFCs, memos and decision records', href: '#capabilities' },
+        { label: 'Operations', desc: 'Audit-grade execution for regulated work', href: '#governance' },
+      ],
+    },
+    {
+      label: 'Resources',
+      items: [
+        { label: 'Measurement', desc: 'The numbers we hold ourselves to', href: '#metrics' },
+        { label: 'Design constitution', desc: 'The rules that forbid decoration', href: '#principles' },
+        { label: 'Questions', desc: 'Behaviour, limits and guarantees', href: '#faq' },
+        { label: 'Begin a space', desc: 'State a goal and watch the plan arrive', href: '#cta' },
+      ],
+    },
+  ],
+
+  /* ── Measurement band ─────────────────────────────────────────────── */
+  metrics: [
+    { value: '180', unit: 'ms', label: 'Median first token', detail: 'speculative dispatch, prefix-cached' },
+    { value: '05', unit: '', label: 'Disciplines synthesised', detail: 'behind a single calm voice' },
+    { value: '00', unit: '', label: 'Unverified claims issued', detail: 'verification is not optional' },
+    { value: '256', unit: '-bit', label: 'Tamper-evident chain', detail: 'every event hash-linked' },
+  ],
+
+  /* ── Positioning table ───────────────────────────────────────────── */
+  compare: {
+    columns: ['Capability', 'Chat assistants', 'Agent frameworks', 'Noevix'],
+    rows: [
+      ['Claim-level verification', 'not offered', 'optional', 'mandatory'],
+      ['Tamper-evident audit', 'not offered', 'not offered', 'hash-chained'],
+      ['Deterministic replay', 'not offered', 'partial', 'content-addressed'],
+      ['Gated external writes', 'not offered', 'manual review', 'staged + approved'],
+      ['Cost accounting', 'per token', 'per run', 'per mission budget'],
+      ['Failure recovery', 'retry', 'retry', 'saga compensation'],
+      ['Budget exhaustion', 'hard stop', 'hard stop', 'governed degradation'],
+    ],
+  },
+
+  /* ── Quote ───────────────────────────────────────────────────────── */
+  quote: {
+    statement: 'We stopped asking the model to be right. We ask it to be checkable.',
+    attribution: 'The Noevix design constitution',
+  },
+
+  /* ── Footer ──────────────────────────────────────────────────────── */
+  footer: [
+    {
+      title: 'Product',
+      links: [
+        { label: 'Live stage', href: '#demo' },
+        { label: 'Capabilities', href: '#capabilities' },
+        { label: 'Autonomy ladder', href: '#governance' },
+        { label: 'Comparison', href: '#compare' },
+      ],
+    },
+    {
+      title: 'Solutions',
+      links: [
+        { label: 'Engineering', href: '#capabilities' },
+        { label: 'Design', href: '#capabilities' },
+        { label: 'Research', href: '#capabilities' },
+        { label: 'Writing', href: '#capabilities' },
+      ],
+    },
+    {
+      title: 'Resources',
+      links: [
+        { label: 'Measurement', href: '#metrics' },
+        { label: 'Constitution', href: '#principles' },
+        { label: 'Questions', href: '#faq' },
+        { label: 'Plans', href: '#pricing' },
+      ],
+    },
+    {
+      title: 'Access',
+      links: [
+        { label: 'Aura laboratory', href: '#cta' },
+        { label: 'Begin a space', href: '#cta' },
+        { label: 'Guided tour', href: '#demo' },
+      ],
+    },
+  ],
 };

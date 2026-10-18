@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useChatStore, LensType } from '../../lib/store.ts';
+import React, { useEffect, useRef, useState } from 'react';
+import { useChatStore, type LensType } from '../../lib/store.ts';
 import {
   Paperclip,
   ArrowUp,
@@ -8,57 +8,62 @@ import {
   ChevronDown,
   Bold,
   Italic,
-  Code as CodeIcon,
+  Code2,
   List,
   ListOrdered,
   Quote,
   Sparkles,
   Mic,
-  AlignLeft,
-  Maximize2,
   Minimize2,
-  Trash2,
-  Table as TableIcon,
-  HelpCircle,
-  FileText,
+  Maximize2,
+  Table2,
+  AlignLeft,
+  Cpu,
+  Palette,
+  Microscope,
+  Sigma,
+  PenLine,
+  Wand2,
+  Square,
+  Type,
+  FileCode2,
+  type LucideIcon,
 } from 'lucide-react';
 
-const LENSES: Array<{ id: LensType; label: string; desc: string }> = [
-  { id: 'auto', label: 'AUTO', desc: 'Adaptive routing across all 5 disciplines' },
-  { id: 'engineering', label: 'ENGINEERING', desc: 'Algorithms, systems, Rust/TS, refactoring' },
-  { id: 'design', label: 'DESIGN', desc: 'Spatial UI, monochrome systems, typography' },
-  { id: 'research', label: 'RESEARCH', desc: 'Distributed papers, benchmarks, causal synthesis' },
-  { id: 'reasoning', label: 'REASONING', desc: 'Formal proofs, trade-off matrix, logic' },
-  { id: 'writing', label: 'WRITING', desc: 'Concise executive memos, RFCs, clear documentation' },
+const LENSES: Array<{ id: LensType; label: string; desc: string; icon: LucideIcon }> = [
+  { id: 'auto', label: 'Auto', desc: 'Adaptive routing across every discipline', icon: Wand2 },
+  { id: 'engineering', label: 'Engineering', desc: 'Algorithms, systems, Rust, TypeScript', icon: Cpu },
+  { id: 'design', label: 'Design', desc: 'Spatial layout, type systems, monochrome', icon: Palette },
+  { id: 'research', label: 'Research', desc: 'Papers, benchmarks, causal synthesis', icon: Microscope },
+  { id: 'reasoning', label: 'Reasoning', desc: 'Formal proofs, invariants, trade-offs', icon: Sigma },
+  { id: 'writing', label: 'Writing', desc: 'Memos, RFCs, documentation', icon: PenLine },
 ];
 
-const PRESETS = [
-  {
-    category: 'Engineering',
-    label: 'Refactor for zero allocation',
-    text: 'Refactor the following logic to eliminate heap allocations and optimize for CPU cache locality:\n\n',
-  },
-  {
-    category: 'Reasoning',
-    label: 'Architectural trade-off matrix',
-    text: 'Provide a structured comparison and trade-off matrix comparing the following options under heavy concurrency:\n\n',
-  },
-  {
-    category: 'Research',
-    label: 'Causal literature synthesis',
-    text: 'Synthesize the state of the art and empirical benchmarks from recent papers on:\n\n',
-  },
-  {
-    category: 'Formal Logic',
-    label: 'Formal invariant proof',
-    text: 'Formulate a step-by-step invariant verification and formal proof for:\n\n',
-  },
-  {
-    category: 'Writing',
-    label: 'Executive decision memo (RFC)',
-    text: 'Draft a concise 1-page executive RFC outlining problem statement, proposed migration, and risk matrix for:\n\n',
-  },
+const PRESETS: Array<{ category: string; label: string; text: string }> = [
+  { category: 'Engineering', label: 'Refactor for zero allocation', text: 'Refactor the following to eliminate heap allocation and optimise for cache locality:\n\n' },
+  { category: 'Reasoning', label: 'Architectural trade-off matrix', text: 'Build a trade-off matrix comparing the following options under heavy concurrency:\n\n' },
+  { category: 'Research', label: 'Synthesis of the state of the art', text: 'Synthesise the current state of the art and empirical benchmarks on:\n\n' },
+  { category: 'Formal', label: 'Invariant proof sketch', text: 'Formulate a step-by-step invariant argument and proof for:\n\n' },
+  { category: 'Writing', label: 'One-page executive RFC', text: 'Draft a one-page RFC: problem, proposal, migration path, risks — for:\n\n' },
 ];
+
+const Btn: React.FC<{
+  icon: LucideIcon;
+  onClick?: () => void;
+  title: string;
+  active?: boolean;
+}> = ({ icon: Icon, onClick, title, active }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    title={title}
+    aria-label={title}
+    className="nv-iconbtn nv-iconbtn--sm"
+    style={active ? { color: 'var(--text)', background: 'var(--glass-3)' } : undefined}
+  >
+    <Icon className="h-3.5 w-3.5" />
+  </button>
+);
 
 export const Dock: React.FC = () => {
   const {
@@ -76,551 +81,472 @@ export const Dock: React.FC = () => {
     outputStyle,
     setOutputStyle,
     startOnboarding,
-    conversations,
-    setActiveConversation,
   } = useChatStore();
 
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<Array<{ id: string; name: string; size: number; type: string }>>([]);
   const [showToolbar, setShowToolbar] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isListening, setIsListening] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [focused, setFocused] = useState(false);
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const lensMenuRef = useRef<HTMLDivElement>(null);
-  const presetsRef = useRef<HTMLDivElement>(null);
-  const keystrokeTimesRef = useRef<number[]>([]);
-  const speechRecognitionRef = useRef<any>(null);
+  const taRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const lensRef = useRef<HTMLDivElement>(null);
+  const presetRef = useRef<HTMLDivElement>(null);
+  const keysRef = useRef<number[]>([]);
+  const recogRef = useRef<any>(null);
 
-  const activeMessages = (activeId && messages[activeId]) || [];
-  const isEmptyState = activeMessages.length === 0;
+  const convo = (activeId && messages[activeId]) || [];
 
-  // Auto-resize textarea unless expanded
   useEffect(() => {
-    if (textareaRef.current) {
-      if (isExpanded) {
-        textareaRef.current.style.height = '240px';
-      } else {
-        textareaRef.current.style.height = 'auto';
-        const scrollH = textareaRef.current.scrollHeight;
-        const maxH = window.innerHeight * 0.38;
-        textareaRef.current.style.height = `${Math.min(scrollH, maxH)}px`;
-      }
+    const el = taRef.current;
+    if (!el) return;
+    if (expanded) {
+      el.style.height = '220px';
+      return;
     }
-  }, [input, isExpanded]);
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, window.innerHeight * 0.34)}px`;
+  }, [input, expanded]);
 
-  // Keystroke rate tracking for Aura energy
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (lensRef.current && !lensRef.current.contains(e.target as Node)) setLensMenuOpen(false);
+      if (presetRef.current && !presetRef.current.contains(e.target as Node)) setShowPresets(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [setLensMenuOpen]);
+
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value;
-    setInput(val);
-
+    const v = e.target.value;
+    setInput(v);
     const now = performance.now();
-    keystrokeTimesRef.current.push(now);
-    keystrokeTimesRef.current = keystrokeTimesRef.current.filter((t) => now - t < 2000);
-    const rate = keystrokeTimesRef.current.length;
-
-    setIsTyping(val.length > 0);
-    setTypingRate(rate);
+    keysRef.current = [...keysRef.current.filter((t) => now - t < 2000), now];
+    setIsTyping(v.length > 0);
+    setTypingRate(keysRef.current.length);
   };
 
-  const handleSend = () => {
+  const send = () => {
     if ((!input.trim() && attachments.length === 0) || isStreaming) return;
-    const textToSend = input.trim();
-    const attToSend = [...attachments];
+    const text = input.trim();
+    const atts = [...attachments];
     setInput('');
     setAttachments([]);
     setIsTyping(false);
     setTypingRate(0);
-    setIsExpanded(false);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
-    sendMessage(textToSend, attToSend);
+    setExpanded(false);
+    if (taRef.current) taRef.current.style.height = 'auto';
+    sendMessage(text, atts);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // ⌘/ or Ctrl+/ toggles lens menu
+  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.metaKey || e.ctrlKey) && e.key === '/') {
       e.preventDefault();
       setLensMenuOpen(!isLensMenuOpen);
       return;
     }
-
-    // ⌘⏎ or Enter (without shift) sends
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      send();
       return;
     }
-
-    // Stop streaming on Escape
     if (e.key === 'Escape' && isStreaming) {
       e.preventDefault();
       stopStreaming();
       return;
     }
-
-    // Up arrow on empty input edits last user prompt
-    if (e.key === 'ArrowUp' && !input.trim() && activeMessages.length > 0) {
-      const lastUser = [...activeMessages].reverse().find((m) => m.role === 'user');
-      if (lastUser) {
+    if (e.key === 'ArrowUp' && !input.trim() && convo.length) {
+      const last = [...convo].reverse().find((m) => m.role === 'user');
+      if (last) {
         e.preventDefault();
-        setInput(lastUser.content);
+        setInput(last.content);
       }
     }
   };
 
-  // Close menus on click outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (lensMenuRef.current && !lensMenuRef.current.contains(e.target as Node)) {
-        setLensMenuOpen(false);
-      }
-      if (presetsRef.current && !presetsRef.current.contains(e.target as Node)) {
-        setShowPresets(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0) return;
-    const newItems = Array.from(files).map((f) => ({
-      id: 'att_' + Date.now() + Math.random().toString(36).slice(2, 6),
-      name: f.name,
-      size: f.size,
-      type: f.type || 'text/plain',
-    }));
-    setAttachments((prev) => [...prev, ...newItems]);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (!files?.length) return;
+    setAttachments((prev) => [
+      ...prev,
+      ...Array.from(files).map((f) => ({
+        id: 'att_' + Date.now() + Math.random().toString(36).slice(2, 6),
+        name: f.name,
+        size: f.size,
+        type: f.type || 'text/plain',
+      })),
+    ]);
+    if (fileRef.current) fileRef.current.value = '';
   };
 
-  // Formatting tools helper
-  const insertFormatting = (prefix: string, suffix = '') => {
-    if (!textareaRef.current) return;
-    const el = textareaRef.current;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const text = el.value;
-    const selected = text.slice(start, end);
-    const replacement = `${prefix}${selected || 'text'}${suffix}`;
-    const nextVal = text.slice(0, start) + replacement + text.slice(end);
-    setInput(nextVal);
+  const wrap = (pre: string, post = '') => {
+    const el = taRef.current;
+    if (!el) return;
+    const { selectionStart: s, selectionEnd: e, value } = el;
+    const sel = value.slice(s, e);
+    const next = value.slice(0, s) + pre + (sel || 'text') + post + value.slice(e);
+    setInput(next);
     setTimeout(() => {
       el.focus();
-      el.setSelectionRange(start + prefix.length, start + prefix.length + (selected.length || 4));
+      el.setSelectionRange(s + pre.length, s + pre.length + (sel.length || 4));
     }, 10);
   };
 
-  // Voice dictation with browser speech recognition or simulated voice transcript
-  const handleToggleVoice = () => {
-    if (isListening) {
-      if (speechRecognitionRef.current) {
-        try {
-          speechRecognitionRef.current.stop();
-        } catch {}
-      }
-      setIsListening(false);
+  const toggleVoice = () => {
+    if (listening) {
+      try {
+        recogRef.current?.stop();
+      } catch {}
+      setListening(false);
       return;
     }
-
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (SpeechRecognition) {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SR) {
       try {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = true;
-        recognition.lang = 'en-US';
-
-        recognition.onstart = () => setIsListening(true);
-        recognition.onresult = (event: any) => {
-          const transcript = Array.from(event.results)
-            .map((result: any) => result[0].transcript)
-            .join('');
-          setInput((prev) => (prev ? prev + ' ' : '') + transcript);
-        };
-        recognition.onerror = () => setIsListening(false);
-        recognition.onend = () => setIsListening(false);
-
-        speechRecognitionRef.current = recognition;
-        recognition.start();
+        const r = new SR();
+        r.continuous = false;
+        r.interimResults = true;
+        r.lang = 'en-US';
+        r.onstart = () => setListening(true);
+        r.onresult = (ev: any) =>
+          setInput((p) => (p ? p + ' ' : '') + Array.from(ev.results).map((x: any) => x[0].transcript).join(''));
+        r.onerror = () => setListening(false);
+        r.onend = () => setListening(false);
+        recogRef.current = r;
+        r.start();
         return;
       } catch {}
     }
-
-    // Fallback simulation
-    setIsListening(true);
+    setListening(true);
     setTimeout(() => {
-      setInput((prev) => (prev ? prev + ' ' : '') + 'Synthesize an asynchronous actor pattern in TypeScript.');
-      setIsListening(false);
-    }, 1600);
+      setInput((p) => (p ? p + ' ' : '') + 'Outline an asynchronous actor pattern in TypeScript.');
+      setListening(false);
+    }, 1500);
   };
 
-  const currentLensLabel =
-    LENSES.find((l) => l.id === selectedLensOverride)?.label || 'AUTO';
-
-  const charCount = input.length;
-  const wordCount = input.trim() ? input.trim().split(/\s+/).length : 0;
-  const tokenEst = Math.ceil(charCount / 4);
+  const activeLens = LENSES.find((l) => l.id === selectedLensOverride) || LENSES[0];
+  const LensIcon = activeLens.icon;
+  const chars = input.length;
+  const words = input.trim() ? input.trim().split(/\s+/).length : 0;
+  const canSend = (input.trim().length > 0 || attachments.length > 0) && !isStreaming;
 
   return (
-    <div
-      className={`transition-all duration-500 ease-out z-30 ${
-        isEmptyState
-          ? 'fixed inset-0 flex flex-col items-center justify-center p-6 pointer-events-none'
-          : 'fixed bottom-0 inset-x-0 pb-6 pt-2 px-4 pointer-events-none'
-      }`}
-    >
-      <div className="w-full max-w-[760px] mx-auto pointer-events-auto flex flex-col items-center">
-        {/* Empty state "Begin." serif headline with quick starter chips */}
-        {isEmptyState && (
-          <div className="text-center mb-6 animate-[wordReveal_600ms_ease-out] max-w-xl">
-            <h1 className="font-serif-display text-5xl sm:text-6xl text-[var(--text)] font-normal tracking-tight">
-              Begin.
-            </h1>
-            <p className="text-[13px] text-[var(--text-3)] font-mono uppercase tracking-widest mt-2">
-              One intelligence. Every discipline.
-            </p>
-
-            {/* Quick starter chips */}
-            <div className="flex flex-wrap items-center justify-center gap-2 mt-5">
-              {[
-                { label: 'Rust Ring Buffer', prompt: 'Construct a lock-free ring buffer in Rust with zero heap allocations.' },
-                { label: 'Vector Clocks Proof', prompt: 'Provide a formal invariant proof for vector clock dominance in distributed stores.' },
-                { label: 'Raft vs EPaxos', prompt: 'Synthesize core trade-offs between Raft and Egalitarian Paxos under write contention.' },
-                { label: 'Monochrome Design System', prompt: 'Draft the CSS token architecture for an editorial monochrome UI.' },
-              ].map((starter, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setInput(starter.prompt);
-                    textareaRef.current?.focus();
-                  }}
-                  className="px-3 py-1.5 rounded-[9999px] bg-[#0E0E0E] hover:bg-[#161616] border border-[var(--line)] text-[12px] text-[var(--text-2)] hover:text-[var(--text)] transition-colors"
-                >
-                  {starter.label}
-                </button>
-              ))}
-
-              {/* Onboarding trigger */}
-              <button
-                onClick={startOnboarding}
-                className="px-3 py-1.5 rounded-[9999px] bg-[var(--elev-2)] hover:bg-[var(--elev-3)] border border-[var(--line-strong)] text-[12px] font-mono text-[var(--text)] flex items-center gap-1.5"
-                title="View animated introduction"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Quick Tour</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* The Dock Container - Crisp obsidian shell without white glow */}
-        <div className="relative w-full rounded-[24px] bg-[#0A0A0A] border border-[var(--line-strong)] dock-outer-glow shadow-2xl transition-all duration-200">
-          {/* Top Formatting & Assistant Toolbar if toggled */}
-          {showToolbar && (
-            <div className="px-4 py-2 border-b border-[var(--line)] flex items-center justify-between text-[11px] font-mono text-[var(--text-3)] bg-[#0F0F0F] rounded-t-[24px] flex-wrap gap-2">
-              <div className="flex items-center gap-1 flex-wrap">
-                <button
-                  onClick={() => insertFormatting('**', '**')}
-                  className="p-1.5 rounded-[4px] hover:text-[var(--text)] hover:bg-[var(--elev-2)] transition-colors"
-                  title="Bold"
-                >
-                  <Bold className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => insertFormatting('*', '*')}
-                  className="p-1.5 rounded-[4px] hover:text-[var(--text)] hover:bg-[var(--elev-2)] transition-colors"
-                  title="Italic"
-                >
-                  <Italic className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => insertFormatting('`', '`')}
-                  className="p-1.5 rounded-[4px] hover:text-[var(--text)] hover:bg-[var(--elev-2)] transition-colors"
-                  title="Inline Code"
-                >
-                  <CodeIcon className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => insertFormatting('\n```typescript\n', '\n```')}
-                  className="p-1.5 rounded-[4px] hover:text-[var(--text)] hover:bg-[var(--elev-2)] transition-colors"
-                  title="Code Block"
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => insertFormatting('\n- ')}
-                  className="p-1.5 rounded-[4px] hover:text-[var(--text)] hover:bg-[var(--elev-2)] transition-colors"
-                  title="Bullet List"
-                >
-                  <List className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => insertFormatting('\n1. ')}
-                  className="p-1.5 rounded-[4px] hover:text-[var(--text)] hover:bg-[var(--elev-2)] transition-colors"
-                  title="Numbered List"
-                >
-                  <ListOrdered className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => insertFormatting('\n> ')}
-                  className="p-1.5 rounded-[4px] hover:text-[var(--text)] hover:bg-[var(--elev-2)] transition-colors"
-                  title="Blockquote"
-                >
-                  <Quote className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => insertFormatting('\n| Feature | Option A | Option B |\n| :--- | :--- | :--- |\n| Latency | Sub-10ms | 50ms |\n')}
-                  className="p-1.5 rounded-[4px] hover:text-[var(--text)] hover:bg-[var(--elev-2)] transition-colors"
-                  title="Insert Comparison Table"
-                >
-                  <TableIcon className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* Stats & Clear Action */}
-              <div className="flex items-center gap-3">
-                <span>
-                  {wordCount} words | {charCount} chars | ~{tokenEst} tok
-                </span>
-                {input.length > 0 && (
-                  <button
-                    onClick={() => setInput('')}
-                    className="hover:text-[var(--text)] transition-colors"
-                    title="Clear prompt"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Attachments preview row if present */}
-          {attachments.length > 0 && (
-            <div className="px-4 pt-3 flex flex-wrap gap-2">
-              {attachments.map((att) => (
-                <div
-                  key={att.id}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-[#141414] text-[12px] font-mono text-[var(--text-2)] border border-[var(--line)]"
-                >
-                  <span className="truncate max-w-[140px]">{att.name}</span>
-                  <span className="text-[10px] text-[var(--text-3)]">({Math.round(att.size / 1024)}kb)</span>
-                  <button
-                    onClick={() => setAttachments((prev) => prev.filter((a) => a.id !== att.id))}
-                    className="hover:text-[var(--text)] ml-1"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Textarea with clean focus */}
-          <div className="px-4 pt-3 pb-2 flex items-start gap-2">
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={handleInput}
-              onKeyDown={handleKeyDown}
-              placeholder={isEmptyState ? 'State your hypothesis, architecture, or inquiry...' : 'Synthesize query...'}
-              rows={1}
-              className={`w-full bg-transparent text-[16px] text-[var(--text)] placeholder-[var(--text-3)] outline-none resize-none leading-relaxed transition-all ${
-                isExpanded ? 'h-[240px]' : 'min-h-[42px] max-h-[38vh]'
-              }`}
-            />
-
-            {/* Expand / Collapse composer toggle */}
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="p-1 rounded-[4px] text-[var(--text-3)] hover:text-[var(--text)] shrink-0 transition-colors mt-1"
-              title={isExpanded ? 'Collapse composer' : 'Expand full height'}
-            >
-              {isExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-
-          {/* Bottom Controls Bar */}
-          <div className="px-3 pb-3 flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {/* Attach File Button */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                onChange={handleFileUpload}
-                className="hidden"
+    <div className="relative z-20 shrink-0 px-4 pb-5 pt-2 sm:px-8 lg:px-12">
+      <div className="mx-auto w-full max-w-[var(--dock-max)]">
+        {/* ── Formatting toolbar ─────────────────────────────────── */}
+        {showToolbar && (
+          <div
+            className="anim-fade mb-2 flex flex-wrap items-center justify-between gap-2 rounded-[14px] px-2.5 py-2"
+            style={{ background: 'var(--glass-1)', border: '1px solid var(--line)' }}
+          >
+            <div className="flex items-center gap-0.5">
+              <Btn icon={Bold} title="Bold" onClick={() => wrap('**', '**')} />
+              <Btn icon={Italic} title="Italic" onClick={() => wrap('*', '*')} />
+              <Btn icon={Code2} title="Inline code" onClick={() => wrap('`', '`')} />
+              <Btn icon={FileCode2} title="Code block" onClick={() => wrap('\n```typescript\n', '\n```')} />
+              <span className="mx-1 h-4 w-px" style={{ background: 'var(--line)' }} />
+              <Btn icon={List} title="Bulleted list" onClick={() => wrap('\n- ')} />
+              <Btn icon={ListOrdered} title="Numbered list" onClick={() => wrap('\n1. ')} />
+              <Btn icon={Quote} title="Blockquote" onClick={() => wrap('\n> ')} />
+              <Btn
+                icon={Table2}
+                title="Comparison table"
+                onClick={() =>
+                  wrap('\n| Option | Latency | Cost |\n| :--- | :--- | :--- |\n| A | 8ms | — |\n')
+                }
               />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--text-3)] hover:text-[var(--text)] hover:bg-[#141414] transition-colors"
-                title="Attach context file or code snippet"
-              >
-                <Paperclip className="w-4 h-4" />
-              </button>
-
-              {/* Formatting Toolbar Toggle */}
-              <button
-                onClick={() => setShowToolbar(!showToolbar)}
-                className={`px-2 py-1 rounded-[6px] text-[11px] font-mono transition-colors ${
-                  showToolbar
-                    ? 'bg-[#181818] text-[var(--text)] font-semibold'
-                    : 'text-[var(--text-3)] hover:text-[var(--text)] hover:bg-[#141414]'
-                }`}
-                title="Formatting toolbar (Bold, Code, Lists, Tables)"
-              >
-                <span>Aa</span>
-              </button>
-
-              {/* Output Style Quick Switcher (Lists vs Paragraphs vs Code) */}
-              <button
-                onClick={() => {
-                  const next = outputStyle === 'lists' ? 'paragraphs' : outputStyle === 'paragraphs' ? 'code_first' : 'lists';
-                  setOutputStyle(next);
-                }}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-[9999px] bg-[#121212] hover:bg-[#181818] border border-[var(--line)] text-[11px] font-mono text-[var(--text-2)] hover:text-[var(--text)] transition-colors"
-                title={`Click to switch format: currently ${outputStyle.toUpperCase()}`}
-              >
-                {outputStyle === 'lists' ? (
-                  <List className="w-3 h-3 text-[var(--text-3)]" />
-                ) : outputStyle === 'paragraphs' ? (
-                  <AlignLeft className="w-3 h-3 text-[var(--text-3)]" />
-                ) : (
-                  <CodeIcon className="w-3 h-3 text-[var(--text-3)]" />
-                )}
-                <span className="uppercase text-[10px]">Format: {outputStyle.replace('_', '-')}</span>
-              </button>
-
-              {/* Presets Prompt Templates Dropdown */}
-              <div className="relative" ref={presetsRef}>
-                <button
-                  onClick={() => setShowPresets(!showPresets)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-[9999px] bg-[#121212] hover:bg-[#181818] border border-[var(--line)] text-[11px] font-mono text-[var(--text-3)] hover:text-[var(--text)] transition-colors"
-                  title="Prompt templates"
-                >
-                  <Sparkles className="w-3 h-3" />
-                  <span className="hidden sm:inline">Presets</span>
-                </button>
-
-                {showPresets && (
-                  <div className="absolute left-0 bottom-full mb-2 w-72 sm:w-80 p-2 rounded-[16px] bg-[#0A0A0A] border border-[var(--line-strong)] shadow-2xl backdrop-blur-xl z-50 animate-[wordReveal_140ms_ease-out]">
-                    <div className="px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-[var(--text-3)]">
-                      Architectural Invariants & Presets
-                    </div>
-                    <div className="space-y-1 mt-1">
-                      {PRESETS.map((p, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => {
-                            setInput(p.text);
-                            setShowPresets(false);
-                            textareaRef.current?.focus();
-                          }}
-                          className="w-full text-left p-2 rounded-[8px] hover:bg-[#141414] text-[12px] text-[var(--text-2)] hover:text-[var(--text)] transition-colors block"
-                        >
-                          <div className="font-medium text-[var(--text)]">{p.label}</div>
-                          <span className="text-[10px] text-[var(--text-3)] uppercase font-mono">{p.category}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Lens Control Dropdown */}
-              <div className="relative" ref={lensMenuRef}>
-                <button
-                  onClick={() => setLensMenuOpen(!isLensMenuOpen)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-[9999px] bg-[#121212] hover:bg-[#181818] border border-[var(--line)] text-[11px] font-mono tracking-wider text-[var(--text-2)] hover:text-[var(--text)] transition-colors"
-                  title="Specialist Discipline Lens (⌘/)"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--text)] opacity-70" />
-                  <span>{currentLensLabel}</span>
-                  <ChevronDown className="w-3 h-3 text-[var(--text-3)]" />
-                </button>
-
-                {/* Lens Menu Overlay */}
-                {isLensMenuOpen && (
-                  <div className="absolute left-0 bottom-full mb-2 w-72 p-2 rounded-[16px] bg-[#0A0A0A] border border-[var(--line-strong)] shadow-2xl backdrop-blur-xl z-50 animate-[wordReveal_150ms_ease-out]">
-                    <div className="px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-[var(--text-3)]">
-                      Intelligence Lens Override
-                    </div>
-                    <div className="space-y-1 mt-1">
-                      {LENSES.map((lens) => {
-                        const isSelected = selectedLensOverride === lens.id;
-                        return (
-                          <button
-                            key={lens.id}
-                            onClick={() => {
-                              setSelectedLens(lens.id);
-                              setLensMenuOpen(false);
-                            }}
-                            className={`w-full flex items-start gap-2.5 p-2 rounded-[10px] text-left transition-colors ${
-                              isSelected
-                                ? 'bg-[#161616] text-[var(--text)]'
-                                : 'hover:bg-[#141414] text-[var(--text-2)]'
-                            }`}
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <span className="font-mono text-[12px] font-medium">{lens.label}</span>
-                                {isSelected && <Check className="w-3.5 h-3.5 text-[var(--text)]" />}
-                              </div>
-                              <p className="text-[11px] text-[var(--text-3)] leading-tight mt-0.5">{lens.desc}</p>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
-
-            {/* Right: Voice Dictation & Send Action */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              {/* Voice button */}
-              <button
-                onClick={handleToggleVoice}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                  isListening
-                    ? 'bg-[var(--text)] text-[var(--bg)] animate-pulse'
-                    : 'text-[var(--text-3)] hover:text-[var(--text)] hover:bg-[#141414]'
-                }`}
-                title={isListening ? 'Listening (click to stop)...' : 'Voice Dictation'}
-              >
-                <Mic className="w-3.5 h-3.5" />
-              </button>
-
-              {/* Send or Stop */}
-              {isStreaming ? (
+            <div className="flex items-center gap-3 pr-1 font-mono text-[10.5px]" style={{ color: 'var(--text-4)' }}>
+              <span className="nv-num">
+                {words}w · {chars}c · ~{Math.ceil(chars / 4)}t
+              </span>
+              {input && (
                 <button
-                  onClick={stopStreaming}
-                  className="w-8 h-8 rounded-full bg-[#1A1A1A] border border-[var(--line-strong)] text-[var(--text)] flex items-center justify-center hover:bg-[#222222] transition-colors"
-                  title="Stop generating (Esc)"
+                  onClick={() => setInput('')}
+                  className="uppercase tracking-wider transition-colors hover:text-[var(--text)]"
                 >
-                  <div className="w-2.5 h-2.5 bg-[var(--text)] rounded-[2px]" />
-                </button>
-              ) : (
-                <button
-                  onClick={handleSend}
-                  disabled={!input.trim() && attachments.length === 0}
-                  className="w-8 h-8 rounded-full bg-[var(--text)] text-[var(--bg)] flex items-center justify-center disabled:opacity-20 hover:opacity-90 active:scale-95 transition-all shadow-sm"
-                  title="Send prompt (Enter or ⌘Enter)"
-                >
-                  <ArrowUp className="w-4 h-4 stroke-[2.5]" />
+                  Clear
                 </button>
               )}
             </div>
           </div>
+        )}
+
+        {/* ── Attachments ────────────────────────────────────────── */}
+        {attachments.length > 0 && (
+          <div className="anim-fade mb-2 flex flex-wrap gap-1.5">
+            {attachments.map((a) => (
+              <span
+                key={a.id}
+                className="flex items-center gap-2 rounded-full py-1 pl-3 pr-1.5 text-[11.5px]"
+                style={{ background: 'var(--glass-2)', border: '1px solid var(--line)' }}
+              >
+                <Paperclip className="h-3 w-3 shrink-0" style={{ color: 'var(--text-3)' }} />
+                <span className="max-w-[160px] truncate" style={{ color: 'var(--text-1)' }}>
+                  {a.name}
+                </span>
+                <span className="nv-num text-[10px]" style={{ color: 'var(--text-4)' }}>
+                  {Math.max(1, Math.round(a.size / 1024))}kb
+                </span>
+                <button
+                  onClick={() => setAttachments((p) => p.filter((x) => x.id !== a.id))}
+                  className="nv-iconbtn nv-iconbtn--sm !h-6 !w-6 sm:!h-5 sm:!w-5"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* ── The dock ───────────────────────────────────────────── */}
+        <div
+          className="nv-edge relative overflow-hidden rounded-[24px] transition-all duration-300"
+          style={{
+            background: 'linear-gradient(180deg, var(--surface-2) 0%, var(--surface-1) 100%)',
+            border: '1px solid transparent',
+            boxShadow: focused
+              ? 'var(--dock-shadow), 0 0 0 1px var(--line-bright), 0 0 0 5px var(--ring-soft)'
+              : 'var(--dock-shadow)',
+          }}
+        >
+          {/* top filament */}
+          <span
+            className="pointer-events-none absolute inset-x-8 top-0 h-px transition-opacity duration-500"
+            style={{
+              background: 'linear-gradient(90deg, transparent, var(--line-bright), transparent)',
+              opacity: focused ? 1 : 0.4,
+            }}
+          />
+
+          <div className="flex items-start gap-2 px-3 pt-3">
+            <textarea
+              ref={taRef}
+              value={input}
+              onChange={handleInput}
+              onKeyDown={onKeyDown}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              rows={1}
+              placeholder="Ask anything, or describe what you want to build…"
+              className="nv-scroll min-h-[44px] w-full resize-none bg-transparent px-2 py-2 text-[15.5px] leading-relaxed tracking-[-0.011em] outline-none"
+              style={{ color: 'var(--text)' }}
+            />
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="nv-iconbtn nv-iconbtn--sm mt-1.5 shrink-0"
+              title={expanded ? 'Collapse' : 'Expand composer'}
+            >
+              {expanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            </button>
+          </div>
+
+          {/* control row */}
+          <div className="flex items-center justify-between gap-2 px-3 pb-2.5 pt-1">
+            <div className="flex min-w-0 items-center gap-1">
+              <input ref={fileRef} type="file" multiple onChange={onFiles} className="hidden" />
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="nv-iconbtn nv-iconbtn--sm h-10 w-10 lg:!h-8 lg:!w-8"
+                title="Attach a file"
+              >
+                <Paperclip className="h-4 w-4" />
+              </button>
+
+              <button
+                onClick={() => setShowToolbar((v) => !v)}
+                className="nv-iconbtn nv-iconbtn--sm h-10 w-10 lg:!h-8 lg:!w-8"
+                style={showToolbar ? { color: 'var(--text)', background: 'var(--glass-3)' } : undefined}
+                title="Formatting"
+              >
+                <Type className="h-4 w-4" />
+              </button>
+
+              {/* Discipline selector */}
+              <div className="relative" ref={lensRef}>
+                <button
+                  onClick={() => setLensMenuOpen(!isLensMenuOpen)}
+                  className="nv-pill h-10 !px-3 lg:h-8"
+                  data-active={isLensMenuOpen}
+                  title="Discipline lens  (⌘/)"
+                >
+                  <LensIcon className="h-3.5 w-3.5" style={{ color: 'var(--text-2)' }} />
+                  <span>{activeLens.label}</span>
+                  <ChevronDown className="h-3 w-3" style={{ color: 'var(--text-4)' }} />
+                </button>
+
+                {isLensMenuOpen && (
+                  <div
+                    className="nv-menu absolute bottom-[calc(100%+10px)] left-0 z-50 w-[300px]"
+                    style={{ ['--menu-origin' as any]: 'bottom left' }}
+                  >
+                    <div className="nv-menu__label">Discipline</div>
+                    {LENSES.map((l) => {
+                      const Icon = l.icon;
+                      const active = selectedLensOverride === l.id;
+                      return (
+                        <button
+                          key={l.id}
+                          data-active={active}
+                          onClick={() => {
+                            setSelectedLens(l.id);
+                            setLensMenuOpen(false);
+                          }}
+                          className="nv-menu__item items-start"
+                        >
+                          <Icon
+                            className="mt-0.5 h-4 w-4 shrink-0"
+                            style={{ color: active ? 'var(--text)' : 'var(--text-3)' }}
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center justify-between gap-2">
+                              <span className="text-[13px] font-medium">{l.label}</span>
+                              {active && <Check className="h-3.5 w-3.5" />}
+                            </span>
+                            <span
+                              className="mt-0.5 block text-[11.5px] leading-snug"
+                              style={{ color: 'var(--text-4)' }}
+                            >
+                              {l.desc}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Output shape */}
+              <button
+                onClick={() =>
+                  setOutputStyle(
+                    outputStyle === 'lists'
+                      ? 'paragraphs'
+                      : outputStyle === 'paragraphs'
+                        ? 'code_first'
+                        : outputStyle === 'code_first'
+                          ? 'tables'
+                          : 'lists'
+                  )
+                }
+                className="nv-pill hidden h-10 !px-3 sm:inline-flex lg:h-8"
+                title="Preferred answer shape"
+              >
+                {outputStyle === 'lists' ? (
+                  <List className="h-3.5 w-3.5" style={{ color: 'var(--text-2)' }} />
+                ) : outputStyle === 'paragraphs' ? (
+                  <AlignLeft className="h-3.5 w-3.5" style={{ color: 'var(--text-2)' }} />
+                ) : outputStyle === 'code_first' ? (
+                  <Code2 className="h-3.5 w-3.5" style={{ color: 'var(--text-2)' }} />
+                ) : (
+                  <Table2 className="h-3.5 w-3.5" style={{ color: 'var(--text-2)' }} />
+                )}
+                <span className="capitalize">{outputStyle.replace('_', ' ')}</span>
+              </button>
+
+              {/* Presets */}
+              <div className="relative" ref={presetRef}>
+                <button
+                  onClick={() => setShowPresets((v) => !v)}
+                  className="nv-iconbtn nv-iconbtn--sm h-10 w-10 lg:!h-8 lg:!w-8"
+                  style={showPresets ? { color: 'var(--text)', background: 'var(--glass-3)' } : undefined}
+                  title="Prompt presets"
+                >
+                  <Sparkles className="h-4 w-4" />
+                </button>
+
+                {showPresets && (
+                  <div
+                    className="nv-menu absolute bottom-[calc(100%+10px)] left-0 z-50 w-[290px]"
+                    style={{ ['--menu-origin' as any]: 'bottom left' }}
+                  >
+                    <div className="nv-menu__label">Presets</div>
+                    {PRESETS.map((p) => (
+                      <button
+                        key={p.label}
+                        onClick={() => {
+                          setInput(p.text);
+                          setShowPresets(false);
+                          taRef.current?.focus();
+                        }}
+                        className="nv-menu__item flex-col !items-start !gap-0.5"
+                      >
+                        <span className="text-[13px] font-medium" style={{ color: 'var(--text)' }}>
+                          {p.label}
+                        </span>
+                        <span className="nv-label !text-[10px]">{p.category}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                onClick={toggleVoice}
+                className="nv-iconbtn nv-iconbtn--sm h-10 w-10 lg:!h-8 lg:!w-8"
+                style={
+                  listening ? { color: 'var(--bg)', background: 'var(--text)' } : undefined
+                }
+                title={listening ? 'Listening — click to stop' : 'Dictate'}
+              >
+                <Mic className="h-4 w-4" />
+              </button>
+
+              {isStreaming ? (
+                <button
+                  onClick={stopStreaming}
+                  className="nv-btn nv-btn--sm !h-9 !gap-2 !px-3.5"
+                  title="Stop generating"
+                >
+                  <Square className="h-3 w-3 fill-current" />
+                  Stop
+                </button>
+              ) : (
+                <button
+                  onClick={send}
+                  disabled={!canSend}
+                  className="nv-btn nv-btn--primary !h-9 !w-9 !rounded-full !p-0"
+                  title="Send"
+                  aria-label="Send"
+                >
+                  <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.4} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Hints ──────────────────────────────────────────────── */}
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 px-1">
+          <div
+            className="flex items-center gap-2.5 font-mono text-[10.5px]"
+            style={{ color: 'var(--text-4)' }}
+          >
+            <span className="hidden items-center gap-1 sm:flex">
+              <span className="nv-kbd h-[17px] text-[9px]">↵</span> send
+            </span>
+            <span className="hidden items-center gap-1 sm:flex">
+              <span className="nv-kbd h-[17px] text-[9px]">⇧↵</span> newline
+            </span>
+            <span className="hidden items-center gap-1 md:flex">
+              <span className="nv-kbd h-[17px] text-[9px]">⌘/</span> discipline
+            </span>
+          </div>
+
+          <button
+            onClick={startOnboarding}
+            className="flex items-center gap-1.5 py-2.5 font-mono text-[10.5px] uppercase tracking-[0.12em] transition-colors hover:text-[var(--text)] lg:py-0"
+            style={{ color: 'var(--text-4)' }}
+          >
+            <Sparkles className="h-3 w-3" />
+            Guided tour
+          </button>
         </div>
       </div>
     </div>

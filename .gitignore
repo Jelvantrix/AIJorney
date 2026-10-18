@@ -6,3 +6,12 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Runtime state. This is the server's STORAGE_DIR (src/api/config.ts, default
+# ./data) and is written at run time by the chat store and every mission plane.
+# Each writer calls mkdirSync(recursive) on boot, so a fresh clone recreates it.
+data/
+
+# Tooling caches
+.vite/
+*.tsbuildinfo

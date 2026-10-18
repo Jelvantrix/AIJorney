@@ -3,14 +3,16 @@ export type Theme = 'dark' | 'light' | 'system';
 const STORAGE_KEY = 'noevix-theme';
 
 export function getStoredTheme(): Theme {
-  if (typeof window === 'undefined') return 'system';
+  if (typeof window === 'undefined') return 'dark';
   try {
     const val = localStorage.getItem(STORAGE_KEY);
     if (val === 'dark' || val === 'light' || val === 'system') {
       return val;
     }
   } catch {}
-  return 'system';
+  // The canvas is the product: Noevix opens in the dark room by default.
+  // "System" remains available explicitly in Preferences.
+  return 'dark';
 }
 
 export function applyTheme(theme: Theme) {
@@ -21,8 +23,10 @@ export function applyTheme(theme: Theme) {
 
   if (isDark) {
     document.documentElement.classList.add('dark');
+    document.documentElement.classList.remove('light');
   } else {
     document.documentElement.classList.remove('dark');
+    document.documentElement.classList.add('light');
   }
 }
 

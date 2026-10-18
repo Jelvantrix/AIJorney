@@ -1,57 +1,251 @@
-@property --angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
+/* ============================================================================
+   NOEVIX — DESIGN TOKENS
+   "Light in a dark room" — a strictly monochrome system.
+   No hue. Only pure black, pure white, and calibrated neutrals.
+   ========================================================================== */
 
 :root {
-  /* Default Dark Mode - Pure Monochrome "Light in a dark room" */
-  --bg: #000000;
-  --elev-1: #0A0A0A;
-  --elev-2: #111111;
-  --elev-3: #1A1A1A;
-  --line: rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.16);
-  --text: #F5F5F5;
-  --text-2: rgba(245, 245, 245, 0.64);
-  --text-3: rgba(245, 245, 245, 0.38);
+  color-scheme: dark;
 
-  /* Radius tokens: 10 / 16 / 24 / 999 */
-  --radius-sm: 10px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
+  /* ── Canvas & Surfaces (elevation ladder) ─────────────────────────────── */
+  --bg: #000000;
+  --elev-1: #070707;
+  --elev-2: #0d0d0d;
+  --elev-3: #141414;
+  --surface-1: #0a0a0a;
+  --surface-2: #101010;
+  --surface-3: #171717;
+  --surface-4: #1e1e1e;
+  --panel: #080808;
+  --hover: #121212;
+
+  /* glass fills — used for translucent controls over the canvas */
+  --glass-1: rgba(255, 255, 255, 0.022);
+  --glass-2: rgba(255, 255, 255, 0.045);
+  --glass-3: rgba(255, 255, 255, 0.07);
+  --glass-4: rgba(255, 255, 255, 0.1);
+
+  /* ── Hairlines ────────────────────────────────────────────────────────── */
+  --line-faint: rgba(255, 255, 255, 0.055);
+  --line: rgba(255, 255, 255, 0.095);
+  --border: rgba(255, 255, 255, 0.095);
+  --line-strong: rgba(255, 255, 255, 0.18);
+  --line-bright: rgba(255, 255, 255, 0.3);
+
+  /* ── Ink ──────────────────────────────────────────────────────────────
+     Five deliberate steps, none of which disappear. The floor for text is
+     .50 — anything lower is reserved for decorative hairlines, never copy. */
+  --text: #ffffff;
+  --text-1: rgba(255, 255, 255, 0.94);
+  --text-2: rgba(255, 255, 255, 0.8);
+  --text-3: rgba(255, 255, 255, 0.64);
+  --text-4: rgba(255, 255, 255, 0.5);
+  --text-muted: rgba(255, 255, 255, 0.64);
+  --icon: rgba(255, 255, 255, 0.68);
+
+  /* ── Semantic (monochrome — expressed through weight, not hue) ───────── */
+  --ok: #ffffff;
+  --bad: #c4c4c4;
+  --work: #dedede;
+  --warn: #dedede;
+  --muted: rgba(255, 255, 255, 0.64);
+
+  /* ── Elevation ────────────────────────────────────────────────────────── */
+  --highlight-top: rgba(255, 255, 255, 0.07);
+  --highlight-top-strong: rgba(255, 255, 255, 0.12);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.55);
+  --shadow-2: 0 2px 6px -1px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-3: 0 12px 32px -10px rgba(0, 0, 0, 0.75), 0 2px 6px -2px rgba(0, 0, 0, 0.6);
+  --shadow-4: 0 32px 72px -20px rgba(0, 0, 0, 0.9), 0 8px 24px -12px rgba(0, 0, 0, 0.7);
+  --shadow-inset: inset 0 1px 0 var(--highlight-top);
+  --ring: rgba(255, 255, 255, 0.55);
+  --ring-soft: rgba(255, 255, 255, 0.09);
+
+  /* ── Radii ────────────────────────────────────────────────────────────── */
+  --radius-xs: 5px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-2xl: 30px;
   --radius-full: 9999px;
 
-  /* Fonts */
-  --font-serif: 'Instrument Serif', Georgia, serif;
-  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* ── Space (4px grid) ─────────────────────────────────────────────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ── Control geometry ─────────────────────────────────────────────────── */
+  --control-h-sm: 30px;
+  --control-h: 36px;
+  --control-h-lg: 42px;
+  --topbar-h: 56px;
+  --dock-max: 780px;
+
+  /* Horizontal gutter used by every full-width band. Fluid so a 320px phone
+     keeps its content wide while a 2560px desk does not stretch to the edge. */
+  --gutter: 20px;
+
+  /* ── Motion ───────────────────────────────────────────────────────────── */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-1: 120ms;
+  --dur-2: 180ms;
+  --dur-3: 260ms;
+  --dur-4: 420ms;
+
+  /* ── Type ─────────────────────────────────────────────────────────────── */
+  --font-serif: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Aura Dynamic Energy: 0 to 1 */
+  /* ── Code surfaces ────────────────────────────────────────────────────── */
+  --code-bg: #060606;
+  --code-gutter: #0c0c0c;
+  --dock-shadow: 0 24px 56px -16px rgba(0, 0, 0, 0.85), 0 4px 12px -4px rgba(0, 0, 0, 0.6);
+
+  /* ── Overlay ──────────────────────────────────────────────────────────── */
+  --modal-backdrop: rgba(0, 0, 0, 0.72);
+  --scrim-a: rgba(0, 0, 0, 0.82);
+  --scrim-b: rgba(0, 0, 0, 0.94);
+
+  /* ── Reactive aura energy (driven by JS) ─────────────────────────────── */
   --energy: 0.25;
 
-  /* Aura bloom removed per user instruction for crisp dark obsidian */
-  --bloom-color: rgba(0, 0, 0, 0);
-  --bloom-color-subtle: rgba(0, 0, 0, 0);
-  --grain-opacity: 0.03;
+  /* ── Texture ──────────────────────────────────────────────────────────── */
+  --grain-opacity: 0.028;
   --grain-blend: overlay;
+
+  /* spotlight defaults */
+  --mouse-x: 50%;
+  --mouse-y: 50%;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   LIGHT — "Paper" mode. Same system, inverted canvas.
+   ══════════════════════════════════════════════════════════════════════════ */
 html.light {
-  /* Light Theme - Soft Ink Gray Bloom */
-  --bg: #FFFFFF;
-  --elev-1: #F7F7F7;
-  --elev-2: #EFEFEF;
-  --elev-3: #E6E6E6;
-  --line: rgba(0, 0, 0, 0.08);
-  --line-strong: rgba(0, 0, 0, 0.16);
-  --text: #0A0A0A;
-  --text-2: rgba(10, 10, 10, 0.62);
-  --text-3: rgba(10, 10, 10, 0.38);
+  color-scheme: light;
 
-  /* Light mode aura inversion */
-  --bloom-color: rgba(0, 0, 0, 0.08);
-  --bloom-color-subtle: rgba(0, 0, 0, 0.04);
-  --grain-opacity: 0.04;
-  --grain-blend: soft-light;
+  --bg: #ffffff;
+  --elev-1: #fbfbfb;
+  --elev-2: #f5f5f5;
+  --elev-3: #ededed;
+  --surface-1: #fafafa;
+  --surface-2: #f4f4f4;
+  --surface-3: #ececec;
+  --surface-4: #e2e2e2;
+  --panel: #fcfcfc;
+  --hover: #f2f2f2;
+
+  --glass-1: rgba(0, 0, 0, 0.018);
+  --glass-2: rgba(0, 0, 0, 0.035);
+  --glass-3: rgba(0, 0, 0, 0.055);
+  --glass-4: rgba(0, 0, 0, 0.08);
+
+  --line-faint: rgba(0, 0, 0, 0.055);
+  --line: rgba(0, 0, 0, 0.1);
+  --border: rgba(0, 0, 0, 0.1);
+  --line-strong: rgba(0, 0, 0, 0.18);
+  --line-bright: rgba(0, 0, 0, 0.32);
+
+  --text: #000000;
+  --text-1: rgba(0, 0, 0, 0.92);
+  --text-2: rgba(0, 0, 0, 0.78);
+  --text-3: rgba(0, 0, 0, 0.62);
+  --text-4: rgba(0, 0, 0, 0.48);
+  --text-muted: rgba(0, 0, 0, 0.62);
+  --icon: rgba(0, 0, 0, 0.66);
+
+  --ok: #000000;
+  --bad: #5a5a5a;
+  --work: #3a3a3a;
+  --warn: #3a3a3a;
+  --muted: rgba(0, 0, 0, 0.62);
+
+  --highlight-top: rgba(255, 255, 255, 0.9);
+  --highlight-top-strong: rgba(255, 255, 255, 1);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-2: 0 2px 6px -1px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-3: 0 12px 32px -10px rgba(0, 0, 0, 0.12), 0 2px 6px -2px rgba(0, 0, 0, 0.07);
+  --shadow-4: 0 32px 72px -20px rgba(0, 0, 0, 0.18), 0 8px 24px -12px rgba(0, 0, 0, 0.1);
+  --ring: rgba(0, 0, 0, 0.6);
+  --ring-soft: rgba(0, 0, 0, 0.08);
+
+  --code-bg: #f7f7f8;
+  --code-gutter: #efeff1;
+  --dock-shadow: 0 24px 56px -16px rgba(0, 0, 0, 0.14), 0 4px 12px -4px rgba(0, 0, 0, 0.07);
+
+  --modal-backdrop: rgba(255, 255, 255, 0.72);
+  --scrim-a: rgba(250, 250, 250, 0.82);
+  --scrim-b: rgba(255, 255, 255, 0.95);
+
+  --grain-opacity: 0.02;
+  --grain-blend: multiply;
+}
+
+/* Attribute written onto <html> by the Aura to damp motion */
+html[data-reduce-effects='true'] * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TOUCH GEOMETRY
+   Below the desktop breakpoint every control grows to a finger-sized hit
+   area. Because the whole kit is built on three geometry tokens, raising
+   them here re-proportions the rail, the top bar, the dock, the marketing
+   chrome and every button at once — nothing drifts out of alignment.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1023px) {
+  :root {
+    --control-h-sm: 36px;
+    --control-h: 40px;
+    --control-h-lg: 46px;
+    --topbar-h: 60px;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --control-h-sm: 38px;
+    --control-h: 42px;
+    --control-h-lg: 48px;
+    --gutter: 16px;
+  }
+
+  /* Every popover becomes a centered sheet. A trigger-anchored panel cannot
+     be guaranteed to fit a 320px viewport, since the trigger's position is
+     data-dependent; a viewport-relative one always fits. */
+  .nv-menu {
+    position: fixed !important;
+    left: var(--gutter) !important;
+    right: var(--gutter) !important;
+    top: 50% !important;
+    bottom: auto !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: translateY(-50%) !important;
+    max-height: 72dvh;
+    overflow-y: auto;
+  }
+}
+
+/* The narrowest phones still shipping: 320px. Tighten the gutter rather
+   than letting a band's own padding consume the content width. */
+@media (max-width: 360px) {
+  :root {
+    --gutter: 14px;
+  }
 }

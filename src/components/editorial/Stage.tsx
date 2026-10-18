@@ -1,22 +1,142 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useChatStore, ChatMessage, LensType } from '../../lib/store.ts';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useChatStore, type ChatMessage, type LensType } from '../../lib/store.ts';
 import {
   Copy,
   Check,
   RotateCcw,
-  GitBranch,
   Pin,
+  PinOff,
   ThumbsUp,
   ThumbsDown,
   ChevronLeft,
   ChevronRight,
-  ExternalLink,
-  AlertCircle,
-  FileCode,
+  AlertTriangle,
+  ArrowRight,
+  GitBranch,
+  Clock,
+  Cpu,
+  Hash,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CodeEditorBlock } from './CodeEditorBlock.tsx';
+
+const DISCIPLINES: Array<{ lens: LensType; title: string; body: string; glyph: string }> = [
+  {
+    lens: 'engineering',
+    title: 'Lock-free ring buffer in Rust',
+    body: 'Zero heap allocation, power-of-two masking, cache-line isolation.',
+    glyph: 'Systems',
+  },
+  {
+    lens: 'reasoning',
+    title: 'Prove vector-clock dominance',
+    body: 'A step-by-step invariant argument for causal ordering across replicas.',
+    glyph: 'Formal',
+  },
+  {
+    lens: 'research',
+    title: 'Raft versus EPaxos',
+    body: 'Synthesise the empirical trade-offs under heavy write contention.',
+    glyph: 'Survey',
+  },
+  {
+    lens: 'design',
+    title: 'Monochrome design constitution',
+    body: 'A token architecture for an editorial, strictly greyscale interface.',
+    glyph: 'Craft',
+  },
+];
+
+/* ────────────────────────────────────────────────────────────────────────── */
+
+const EmptyStage: React.FC<{ onSeed: (text: string) => void }> = ({ onSeed }) => (
+  <div className="anim-rise flex min-h-full flex-col justify-center px-6 py-16 lg:px-2">
+    <div className="mx-auto w-full max-w-[720px]">
+      <div className="mb-7 flex items-center gap-3">
+        <span className="h-px w-10" style={{ background: 'var(--line-strong)' }} />
+        <span className="nv-label">A new thread</span>
+        <span className="h-px flex-1" style={{ background: 'var(--line-faint)' }} />
+      </div>
+
+      <h1
+        className="nv-display text-balance"
+        style={{ fontSize: 'clamp(38px, 6vw, 62px)', lineHeight: 1.01 }}
+      >
+        What should we
+        <br />
+        <em style={{ fontStyle: 'italic', color: 'var(--text-2)' }}>think through</em> together?
+      </h1>
+
+      <p
+        className="text-pretty mt-6 max-w-[46ch] text-[15px] leading-relaxed"
+        style={{ color: 'var(--text-2)' }}
+      >
+        One intelligence across engineering, design, research, reasoning and writing.
+        State a problem, a hypothesis, or a half-formed idea — the dock is below.
+      </p>
+
+      <div className="mt-12 flex items-center gap-3">
+        <span className="nv-label">Or begin from a discipline</span>
+        <span className="h-px flex-1" style={{ background: 'var(--line-faint)' }} />
+      </div>
+
+      <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+        {DISCIPLINES.map((d, i) => (
+          <button
+            key={d.lens}
+            onClick={() => onSeed(d.title)}
+            className="nv-card nv-card--interactive nv-spotlight group/card relative overflow-hidden p-4 text-left"
+            style={{ animation: `nv-rise 420ms var(--ease-out) ${i * 55 + 80}ms both` }}
+            onMouseMove={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - r.left}px`);
+              e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - r.top}px`);
+            }}
+          >
+            <div className="relative flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div
+                  className="text-[13.5px] font-medium leading-snug tracking-[-0.01em]"
+                  style={{ color: 'var(--text)' }}
+                >
+                  {d.title}
+                </div>
+                <p className="mt-1 text-[12px] leading-relaxed" style={{ color: 'var(--text-3)' }}>
+                  {d.body}
+                </p>
+              </div>
+              <ArrowRight
+                className="mt-0.5 h-3.5 w-3.5 shrink-0 -translate-x-1 opacity-0 transition-all duration-200 group-hover/card:translate-x-0 group-hover/card:opacity-70"
+                style={{ color: 'var(--text)' }}
+              />
+            </div>
+            <div className="relative mt-3 flex items-center justify-between">
+              <span className="nv-chip !h-[18px] !text-[9px]">{d.glyph}</span>
+              <span className="nv-label" style={{ opacity: 0.5 }}>
+                {String(i + 1).padStart(2, '0')}
+              </span>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+/* ────────────────────────────────────────────────────────────────────────── */
+
+const MetaCell: React.FC<{ children: React.ReactNode; className?: string }> = ({
+  children,
+  className = '',
+}) => (
+  <span
+    className={`flex items-center justify-end gap-1.5 font-mono text-[10.5px] leading-none ${className}`}
+    style={{ color: 'var(--text-4)', fontVariantNumeric: 'tabular-nums' }}
+  >
+    {children}
+  </span>
+);
 
 export const Stage: React.FC = () => {
   const {
@@ -25,7 +145,6 @@ export const Stage: React.FC = () => {
     isStreaming,
     isThinking,
     streamingText,
-    streamingMessageId,
     streamingError,
     currentToolStatus,
     activeLens,
@@ -38,327 +157,357 @@ export const Stage: React.FC = () => {
     setBranchVersion,
     rateMessage,
     togglePinMessage,
-    openArtifact,
     sendMessage,
   } = useChatStore();
 
-  const [hoveredExchangeId, setHoveredExchangeId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
-  const [editingContent, setEditingContent] = useState('');
-  const [ratingMenuMessageId, setRatingMenuMessageId] = useState<string | null>(null);
-
-  const stageEndRef = useRef<HTMLDivElement>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState('');
+  const [ratingFor, setRatingFor] = useState<string | null>(null);
+  const endRef = useRef<HTMLDivElement>(null);
 
   const activeMessages = (activeId && messages[activeId]) || [];
 
-  // Group messages into exchanges: each exchange has a user prompt and optional assistant reply
-  const exchanges: Array<{
-    userMsg: ChatMessage;
-    assistantMsg?: ChatMessage;
-    index: number;
-  }> = [];
-
-  for (let i = 0; i < activeMessages.length; i++) {
-    const msg = activeMessages[i];
-    if (msg.role === 'user') {
-      const nextMsg = activeMessages[i + 1];
-      const assistantMsg = nextMsg && nextMsg.role === 'assistant' ? nextMsg : undefined;
-      exchanges.push({
-        userMsg: msg,
-        assistantMsg,
-        index: exchanges.length,
+  const exchanges = useMemo(() => {
+    const list: Array<{ user: ChatMessage; assistant?: ChatMessage; index: number }> = [];
+    activeMessages.forEach((m, i) => {
+      if (m.role !== 'user') return;
+      const next = activeMessages[i + 1];
+      list.push({
+        user: m,
+        assistant: next && next.role === 'assistant' ? next : undefined,
+        index: list.length,
       });
-    }
-  }
+    });
+    return list;
+  }, [activeMessages]);
 
-  // Scroll to bottom on streaming
   useEffect(() => {
-    if (isStreaming) {
-      stageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (isStreaming) endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [isStreaming, streamingText]);
 
-  const handleCopy = (text: string, id: string) => {
+  const copy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+    setTimeout(() => setCopiedId(null), 1800);
   };
 
-  const handleEditSubmit = (msgId: string) => {
-    if (editingContent.trim()) {
-      editUserMessage(msgId, editingContent.trim());
-      setEditingPromptId(null);
-    }
-  };
-
-  // Helper to extract code snippets as Artifacts
-  const handleInspectArtifact = (code: string, language?: string) => {
-    openArtifact({
-      id: 'art_' + Date.now(),
-      title: `${language ? language.toUpperCase() : 'SOURCE'} Module`,
-      type: 'code',
-      language: language || 'typescript',
-      content: code,
-    });
-  };
+  if (exchanges.length === 0) {
+    return (
+      <div className="nv-scroll relative z-10 flex-1 overflow-y-auto">
+        <EmptyStage
+          onSeed={(t) => {
+            sendMessage(t);
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="relative z-10 flex-1 overflow-y-auto px-4 sm:px-8 pt-20 pb-44 scroll-smooth">
-      <div className="max-w-[1040px] mx-auto">
-        {exchanges.map(({ userMsg, assistantMsg, index }) => {
+    <div className="nv-scroll relative z-10 flex-1 overflow-x-hidden overflow-y-auto">
+      <div className="mx-auto w-full max-w-[1040px] px-5 pb-40 pt-12 sm:px-8 lg:px-12">
+        {exchanges.map(({ user, assistant, index }) => {
           const isActive = activeExchangeIndex === index;
-          const isHovered = hoveredExchangeId === userMsg.id;
-
-          const versionsCount = userMsg.versions ? userMsg.versions.length : 1;
-          const currentVersionIndex = userMsg.version_index !== undefined ? userMsg.version_index : versionsCount - 1;
-
-          const assistantVersionsCount = assistantMsg?.versions ? assistantMsg.versions.length : 1;
-          const assistantVersionIndex = assistantMsg?.version_index !== undefined ? assistantMsg.version_index : assistantVersionsCount - 1;
+          const uv = user.versions?.length || 1;
+          const ui = user.version_index ?? uv - 1;
+          const av = assistant?.versions?.length || 1;
+          const ai = assistant?.version_index ?? av - 1;
+          const isEditing = editingId === user.id;
 
           return (
-            <div
-              key={userMsg.id}
+            <article
+              key={user.id}
               id={`exchange-${index}`}
-              onMouseEnter={() => {
-                setHoveredExchangeId(userMsg.id);
-                setActiveExchangeIndex(index);
-              }}
-              onMouseLeave={() => setHoveredExchangeId(null)}
-              className={`transition-opacity duration-300 ${
-                isActive || isHovered ? 'opacity-100' : 'opacity-[0.72]'
-              }`}
+              onMouseEnter={() => setActiveExchangeIndex(index)}
+              className="group/turn relative"
+              style={{ opacity: isActive ? 1 : 0.86, transition: 'opacity 260ms var(--ease)' }}
             >
-              <div className="flex flex-col md:flex-row gap-6 md:gap-10">
-                {/* 160px Left Margin for Meta Labels & Branch Switchers */}
-                <div className="w-full md:w-[160px] shrink-0 pt-2 flex flex-col md:items-end text-left md:text-right font-mono text-[11px] uppercase tracking-wider text-[var(--text-3)]">
-                  {/* Branch version switcher if prompt has multiple branches */}
-                  {versionsCount > 1 && (
-                    <div className="flex items-center gap-1.5 mb-2 px-2 py-0.5 rounded-[4px] bg-[var(--elev-2)] text-[var(--text-2)] border border-[var(--line)]">
+              <div className="grid grid-cols-1 gap-x-0 md:grid-cols-[172px_1px_minmax(0,1fr)]">
+                {/* ── Margin column ─────────────────────────────── */}
+                <div className="hidden flex-col items-end gap-2.5 pr-6 pt-1.5 md:flex">
+                  <span
+                    className="nv-display leading-none"
+                    style={{ fontSize: '30px', color: 'var(--text-3)' }}
+                  >
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+
+                  <span
+                    className="font-mono text-[9.5px] font-medium uppercase tracking-[0.14em]"
+                    style={{ color: 'var(--text-2)' }}
+                  >
+                    {assistant?.lens || 'reasoning'}
+                  </span>
+
+                  {assistant && (
+                    <div className="flex flex-col items-end gap-1.5">
+                      {assistant.elapsed_ms !== undefined && (
+                        <MetaCell>
+                          <Clock className="h-2.5 w-2.5" />
+                          {assistant.elapsed_ms}ms
+                        </MetaCell>
+                      )}
+                      {assistant.tokens !== undefined && (
+                        <MetaCell>
+                          <Hash className="h-2.5 w-2.5" />
+                          {assistant.tokens}
+                        </MetaCell>
+                      )}
+                    </div>
+                  )}
+
+                  <MetaCell>
+                    {new Date(user.created_at).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </MetaCell>
+
+                  {uv > 1 && (
+                    <div className="mt-1 flex items-center gap-0.5 rounded-full px-1 py-0.5" style={{ background: 'var(--glass-2)', border: '1px solid var(--line-faint)' }}>
                       <button
-                        disabled={currentVersionIndex <= 0}
-                        onClick={() => setBranchVersion(userMsg.id, currentVersionIndex - 1)}
-                        className="disabled:opacity-20 hover:text-[var(--text)]"
-                        title="Previous branch"
+                        disabled={ui <= 0}
+                        onClick={() => setBranchVersion(user.id, ui - 1)}
+                        className="rounded-full p-0.5 disabled:opacity-25"
+                        style={{ color: 'var(--text-2)' }}
                       >
-                        <ChevronLeft className="w-3 h-3" />
+                        <ChevronLeft className="h-3 w-3" />
                       </button>
-                      <span className="font-mono text-[11px]">
-                        {currentVersionIndex + 1} / {versionsCount}
+                      <span className="nv-num px-0.5 text-[10px]" style={{ color: 'var(--text-2)' }}>
+                        {ui + 1}/{uv}
                       </span>
                       <button
-                        disabled={currentVersionIndex >= versionsCount - 1}
-                        onClick={() => setBranchVersion(userMsg.id, currentVersionIndex + 1)}
-                        className="disabled:opacity-20 hover:text-[var(--text)]"
-                        title="Next branch"
+                        disabled={ui >= uv - 1}
+                        onClick={() => setBranchVersion(user.id, ui + 1)}
+                        className="rounded-full p-0.5 disabled:opacity-25"
+                        style={{ color: 'var(--text-2)' }}
                       >
-                        <ChevronRight className="w-3 h-3" />
+                        <ChevronRight className="h-3 w-3" />
                       </button>
                     </div>
                   )}
 
-                  {/* Lens name */}
-                  <span className="text-[var(--text-2)] font-semibold mb-1">
-                    {assistantMsg?.lens ? assistantMsg.lens.toUpperCase() : 'REASONING'}
-                  </span>
-
-                  {/* Elapsed time & Token count */}
-                  {assistantMsg?.elapsed_ms !== undefined && (
-                    <span className="mb-0.5">{assistantMsg.elapsed_ms}ms</span>
-                  )}
-                  {assistantMsg?.tokens !== undefined && (
-                    <span className="mb-0.5">{assistantMsg.tokens} tok</span>
-                  )}
-
-                  {/* Mono timestamp */}
-                  <span className="mt-1">
-                    {new Date(userMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-
-                  {/* Pinned badge */}
-                  {userMsg.pinned && (
-                    <span className="mt-2 px-1.5 py-0.5 rounded-[4px] bg-[var(--elev-3)] text-[var(--text)] text-[9px]">
-                      PINNED
+                  {user.pinned && (
+                    <span className="nv-badge !h-[18px] !text-[9px]">
+                      <Pin className="h-2.5 w-2.5" />
+                      Pinned
                     </span>
                   )}
                 </div>
 
-                {/* Content Column (720px max width) */}
-                <div className="flex-1 max-w-[720px] min-w-0">
-                  {/* User Prompt Headline: Instrument Serif 32px, left aligned, no container */}
-                  <div className="mb-8">
-                    {editingPromptId === userMsg.id ? (
-                      <div className="space-y-3">
-                        <textarea
-                          value={editingContent}
-                          onChange={(e) => setEditingContent(e.target.value)}
-                          className="w-full font-serif-display text-2xl sm:text-3xl text-[var(--text)] bg-[var(--elev-1)] p-4 rounded-[12px] border border-[var(--line-strong)] outline-none resize-none"
-                          rows={3}
-                          autoFocus
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEditSubmit(userMsg.id)}
-                            className="px-4 py-1.5 rounded-[9999px] bg-[var(--text)] text-[var(--bg)] text-[12px] font-medium"
-                          >
-                            Save & Branch
-                          </button>
-                          <button
-                            onClick={() => setEditingPromptId(null)}
-                            className="px-4 py-1.5 rounded-[9999px] border border-[var(--line)] text-[12px] text-[var(--text-2)]"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <h2
-                        onClick={() => {
-                          setEditingPromptId(userMsg.id);
-                          setEditingContent(userMsg.content);
+                {/* ── Margin rule ───────────────────────────────── */}
+                <div
+                  className="hidden w-px transition-colors duration-300 md:block"
+                  style={{ background: isActive ? 'var(--line-strong)' : 'var(--line)' }}
+                />
+
+                {/* ── Content column ────────────────────────────── */}
+                <div className="min-w-0 md:pl-9">
+                  {/* Prompt */}
+                  {isEditing ? (
+                    <div className="space-y-3">
+                      <textarea
+                        value={editDraft}
+                        onChange={(e) => setEditDraft(e.target.value)}
+                        autoFocus
+                        rows={3}
+                        className="nv-display w-full resize-none rounded-[14px] p-4 outline-none"
+                        style={{
+                          fontSize: '24px',
+                          background: 'var(--glass-2)',
+                          border: '1px solid var(--line-bright)',
+                          color: 'var(--text)',
+                          boxShadow: '0 0 0 3px var(--ring-soft)',
                         }}
-                        className="font-serif-display text-2xl sm:text-[32px] leading-[1.12] tracking-[-0.015em] text-[var(--text)] cursor-pointer hover:opacity-90 transition-opacity"
-                        title="Click to edit prompt (or press ↑)"
-                      >
-                        {userMsg.content}
-                      </h2>
+                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            if (editDraft.trim()) editUserMessage(user.id, editDraft.trim());
+                            setEditingId(null);
+                          }}
+                          className="nv-btn nv-btn--primary nv-btn--sm"
+                        >
+                          <GitBranch className="h-3.5 w-3.5" />
+                          Save & branch
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="nv-btn nv-btn--sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <h2
+                      onClick={() => {
+                        setEditingId(user.id);
+                        setEditDraft(user.content);
+                      }}
+                      title="Click to edit and branch"
+                      className="nv-display cursor-text text-balance transition-colors duration-200"
+                      style={{ fontSize: 'clamp(22px, 2.6vw, 31px)' }}
+                    >
+                      {user.content}
+                    </h2>
+                  )}
+
+                  {/* Mobile meta strip */}
+                  <div className="mt-3 flex items-center gap-2.5 md:hidden">
+                    <span className="nv-chip !h-[18px] !text-[9px]">
+                      {(assistant?.lens || 'reasoning').toUpperCase()}
+                    </span>
+                    {assistant?.tokens !== undefined && (
+                      <span className="font-mono text-[10px]" style={{ color: 'var(--text-4)' }}>
+                        {assistant.tokens} tok · {assistant.elapsed_ms}ms
+                      </span>
                     )}
                   </div>
 
-                  {/* Assistant Reply Body */}
-                  {assistantMsg && (
-                    <div className="editorial-reply mb-6">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          code({ node, className, children, ...props }: any) {
-                            const match = /language-(\w+)/.exec(className || '');
-                            const codeString = String(children).replace(/\n$/, '');
-                            const isInline = !match && !codeString.includes('\n');
-
-                            if (isInline) {
+                  {/* Reply */}
+                  {assistant && (
+                    <div className="mt-7">
+                      <div className="editorial-reply">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            code({ className, children, ...props }: any) {
+                              const match = /language-(\w+)/.exec(className || '');
+                              const text = String(children).replace(/\n$/, '');
+                              const inline = !match && !text.includes('\n');
+                              if (inline) {
+                                return (
+                                  <code className={className} {...props}>
+                                    {children}
+                                  </code>
+                                );
+                              }
                               return (
-                                <code
-                                  className="px-1.5 py-0.5 rounded-[4px] bg-[var(--elev-2)] text-[var(--text)] font-mono text-[13px] border border-[var(--line)]"
-                                  {...props}
-                                >
-                                  {children}
-                                </code>
+                                <CodeEditorBlock code={text} language={match?.[1] || undefined} />
                               );
-                            }
+                            },
+                          }}
+                        >
+                          {assistant.content}
+                        </ReactMarkdown>
+                      </div>
 
-                            return (
-                              <CodeEditorBlock
-                                code={codeString}
-                                language={match ? match[1] : undefined}
-                              />
-                            );
-                          },
-                        }}
-                      >
-                        {assistantMsg.content}
-                      </ReactMarkdown>
-
-                      {/* Message Actions Row (appears on hover) */}
+                      {/* Actions */}
                       <div
-                        className={`mt-4 pt-3 border-t border-[var(--line)] flex items-center justify-between text-[11px] font-mono transition-opacity duration-200 ${
-                          isHovered ? 'opacity-100' : 'opacity-0'
-                        }`}
+                        className="mt-5 flex flex-wrap items-center justify-between gap-3 opacity-0 transition-opacity duration-200 group-hover/turn:opacity-100 focus-within:opacity-100"
                       >
-                        <div className="flex items-center gap-4 text-[var(--text-3)]">
-                          {/* Copy */}
+                        <div className="flex flex-wrap items-center gap-0.5">
                           <button
-                            onClick={() => handleCopy(assistantMsg.content, assistantMsg.id)}
-                            className="flex items-center gap-1 hover:text-[var(--text)] transition-colors"
+                            onClick={() => copy(assistant.content, assistant.id)}
+                            className="nv-btn nv-btn--ghost nv-btn--sm"
                           >
-                            {copiedId === assistantMsg.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                            <span>{copiedId === assistantMsg.id ? 'Copied' : 'Copy'}</span>
+                            {copiedId === assistant.id ? (
+                              <Check className="h-3.5 w-3.5" />
+                            ) : (
+                              <Copy className="h-3.5 w-3.5" />
+                            )}
+                            {copiedId === assistant.id ? 'Copied' : 'Copy'}
                           </button>
 
-                          {/* Regenerate */}
                           <button
-                            onClick={() => regenerateAssistantMessage(assistantMsg.id)}
-                            className="flex items-center gap-1 hover:text-[var(--text)] transition-colors"
+                            onClick={() => regenerateAssistantMessage(assistant.id)}
+                            className="nv-btn nv-btn--ghost nv-btn--sm"
                           >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                            <span>Regenerate</span>
+                            <RotateCcw className="h-3.5 w-3.5" />
+                            Regenerate
                           </button>
 
-                          {/* Branch indicator */}
-                          {assistantVersionsCount > 1 && (
-                            <div className="flex items-center gap-1 text-[var(--text-2)]">
+                          <button
+                            onClick={() => togglePinMessage(user.id)}
+                            className="nv-btn nv-btn--ghost nv-btn--sm"
+                            style={user.pinned ? { color: 'var(--text)' } : undefined}
+                          >
+                            {user.pinned ? (
+                              <PinOff className="h-3.5 w-3.5" />
+                            ) : (
+                              <Pin className="h-3.5 w-3.5" />
+                            )}
+                            {user.pinned ? 'Unpin' : 'Pin'}
+                          </button>
+
+                          {av > 1 && (
+                            <div className="ml-1 flex items-center gap-0.5 px-1.5 py-1 font-mono text-[10.5px]" >
                               <button
-                                disabled={assistantVersionIndex <= 0}
-                                onClick={() => setBranchVersion(assistantMsg.id, assistantVersionIndex - 1)}
-                                className="disabled:opacity-20 hover:text-[var(--text)]"
+                                disabled={ai <= 0}
+                                onClick={() => setBranchVersion(assistant.id, ai - 1)}
+                                className="disabled:opacity-25"
+                                style={{ color: 'var(--text-2)' }}
                               >
-                                <ChevronLeft className="w-3 h-3" />
+                                <ChevronLeft className="h-3 w-3" />
                               </button>
-                              <span>
-                                {assistantVersionIndex + 1} / {assistantVersionsCount}
+                              <span className="nv-num" style={{ color: 'var(--text-3)' }}>
+                                revision {ai + 1}/{av}
                               </span>
                               <button
-                                disabled={assistantVersionIndex >= assistantVersionsCount - 1}
-                                onClick={() => setBranchVersion(assistantMsg.id, assistantVersionIndex + 1)}
-                                className="disabled:opacity-20 hover:text-[var(--text)]"
+                                disabled={ai >= av - 1}
+                                onClick={() => setBranchVersion(assistant.id, ai + 1)}
+                                className="disabled:opacity-25"
+                                style={{ color: 'var(--text-2)' }}
                               >
-                                <ChevronRight className="w-3 h-3" />
+                                <ChevronRight className="h-3 w-3" />
                               </button>
                             </div>
                           )}
-
-                          {/* Pin */}
-                          <button
-                            onClick={() => togglePinMessage(userMsg.id)}
-                            className={`flex items-center gap-1 hover:text-[var(--text)] transition-colors ${
-                              userMsg.pinned ? 'text-[var(--text)] font-semibold' : ''
-                            }`}
-                          >
-                            <Pin className="w-3.5 h-3.5" />
-                            <span>{userMsg.pinned ? 'Pinned' : 'Pin'}</span>
-                          </button>
                         </div>
 
-                        {/* Thumbs Feedback with Lens correction */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="nv-label mr-1">Rate</span>
                           <button
-                            onClick={() => rateMessage(assistantMsg.id, 'up')}
-                            className={`p-1 rounded-[4px] hover:bg-[var(--elev-2)] ${
-                              assistantMsg.feedback?.rating === 'up' ? 'text-[var(--text)]' : 'text-[var(--text-3)]'
-                            }`}
-                            title="Helpful reply"
+                            onClick={() => rateMessage(assistant.id, 'up')}
+                            className="nv-iconbtn nv-iconbtn--sm !h-9 !w-9 lg:!h-7 lg:!w-7"
+                            style={
+                              assistant.feedback?.rating === 'up'
+                                ? { color: 'var(--text)', background: 'var(--glass-3)' }
+                                : undefined
+                            }
+                            title="Sound"
                           >
-                            <ThumbsUp className="w-3.5 h-3.5" />
+                            <ThumbsUp className="h-3.5 w-3.5" />
                           </button>
-
                           <button
                             onClick={() => {
-                              rateMessage(assistantMsg.id, 'down');
-                              setRatingMenuMessageId(ratingMenuMessageId === assistantMsg.id ? null : assistantMsg.id);
+                              rateMessage(assistant.id, 'down');
+                              setRatingFor(ratingFor === assistant.id ? null : assistant.id);
                             }}
-                            className={`p-1 rounded-[4px] hover:bg-[var(--elev-2)] ${
-                              assistantMsg.feedback?.rating === 'down' ? 'text-[var(--text)]' : 'text-[var(--text-3)]'
-                            }`}
-                            title="Mark wrong lens or poor response"
+                            className="nv-iconbtn nv-iconbtn--sm !h-9 !w-9 lg:!h-7 lg:!w-7"
+                            style={
+                              assistant.feedback?.rating === 'down'
+                                ? { color: 'var(--text)', background: 'var(--glass-3)' }
+                                : undefined
+                            }
+                            title="Needs revision"
                           >
-                            <ThumbsDown className="w-3.5 h-3.5" />
+                            <ThumbsDown className="h-3.5 w-3.5" />
                           </button>
 
-                          {ratingMenuMessageId === assistantMsg.id && (
-                            <div className="flex items-center gap-1 px-2 py-1 rounded-[6px] bg-[var(--elev-2)] border border-[var(--line)]">
-                              <span className="text-[10px] text-[var(--text-3)]">Wrong Lens?</span>
-                              {(['engineering', 'design', 'research', 'reasoning', 'writing'] as LensType[]).map((lens) => (
-                                <button
-                                  key={lens}
-                                  onClick={() => {
-                                    rateMessage(assistantMsg.id, 'down', lens);
-                                    setRatingMenuMessageId(null);
-                                  }}
-                                  className="px-1.5 py-0.5 rounded-[3px] text-[10px] uppercase hover:bg-[var(--elev-3)] hover:text-[var(--text)]"
-                                >
-                                  {lens[0].toUpperCase()}
-                                </button>
-                              ))}
+                          {ratingFor === assistant.id && (
+                            <div
+                              className="anim-fade ml-1 flex items-center gap-1 rounded-full px-2 py-1"
+                              style={{ background: 'var(--glass-2)', border: '1px solid var(--line)' }}
+                            >
+                              <span className="nv-label mr-0.5">Lens off?</span>
+                              {(['engineering', 'design', 'research', 'reasoning', 'writing'] as LensType[]).map(
+                                (l) => (
+                                  <button
+                                    key={l}
+                                    onClick={() => {
+                                      rateMessage(assistant.id, 'down', l);
+                                      setRatingFor(null);
+                                    }}
+                                    className="rounded-[5px] px-1.5 py-0.5 font-mono text-[10px] uppercase transition-colors hover:bg-[var(--glass-3)]"
+                                    style={{ color: 'var(--text-3)' }}
+                                  >
+                                    {l.slice(0, 3)}
+                                  </button>
+                                )
+                              )}
                             </div>
                           )}
                         </div>
@@ -368,94 +517,124 @@ export const Stage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Hairline Divider & 96px vertical separation between exchanges */}
-              <div className="w-full my-12 md:my-16 h-[1px] bg-[var(--line)]" />
-            </div>
+              {/* Turn divider */}
+              <div className="mt-14 mb-14 flex items-center gap-4">
+                <span className="h-px flex-1" style={{ background: 'var(--line)' }} />
+                <span className="nv-label" style={{ opacity: 0.55 }}>
+                  {String(index + 1).padStart(2, '0')} / {String(exchanges.length).padStart(2, '0')}
+                </span>
+                <span className="h-px flex-1" style={{ background: 'var(--line)' }} />
+              </div>
+            </article>
           );
         })}
 
-        {/* Currently Streaming Exchange */}
+        {/* ── Live turn ─────────────────────────────────────────── */}
         {isStreaming && (
-          <div className="opacity-100 mb-12">
-            <div className="flex flex-col md:flex-row gap-6 md:gap-10">
-              {/* Left Margin Telemetry */}
-              <div className="w-full md:w-[160px] shrink-0 pt-2 flex flex-col md:items-end font-mono text-[11px] uppercase tracking-wider text-[var(--text-3)]">
-                <span className="text-[var(--text)] font-semibold mb-1">{activeLens.toUpperCase()}</span>
-                <span>{elapsedMs}ms</span>
-                <span>{tokenCount} tok</span>
-                <span className="mt-2 text-[var(--text)] animate-pulse">SYNTHESIZING</span>
-              </div>
+          <div className="anim-fade grid grid-cols-1 md:grid-cols-[172px_1px_minmax(0,1fr)]">
+            <div className="hidden flex-col items-end gap-2.5 pr-6 pt-1.5 md:flex">
+              <span className="nv-display leading-none" style={{ fontSize: '30px', color: 'var(--text-2)' }}>
+                {String(exchanges.length + 1).padStart(2, '0')}
+              </span>
+              <span
+                className="font-mono text-[9.5px] font-medium uppercase tracking-[0.14em]"
+                style={{ color: 'var(--text)' }}
+              >
+                {activeLens}
+              </span>
+              <MetaCell>
+                <Clock className="h-2.5 w-2.5" />
+                {elapsedMs}ms
+              </MetaCell>
+              <MetaCell>
+                <Hash className="h-2.5 w-2.5" />
+                {tokenCount}
+              </MetaCell>
+            </div>
 
-              {/* Streaming Content Column */}
-              <div className="flex-1 max-w-[720px] min-w-0">
-                {/* Tool running status bar if active */}
-                {currentToolStatus && (
-                  <div className="mb-4 p-3 rounded-[8px] bg-[var(--elev-1)] border border-[var(--line)]">
-                    <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-2)] mb-2">
-                      <span>STATUS: {currentToolStatus}</span>
-                      <span>ACTIVE PIPELINE</span>
-                    </div>
-                    <div className="status-line-track rounded-full">
-                      <div className="status-line-indicator rounded-full" />
-                    </div>
-                  </div>
-                )}
+            <div className="hidden w-px md:block" style={{ background: 'var(--line-strong)' }} />
 
-                {/* Thinking pulse before first token */}
-                {isThinking && (
-                  <div className="flex items-center gap-3 py-4 text-[13px] font-mono text-[var(--text-3)]">
-                    <span className="w-2 h-2 rounded-full bg-[var(--text)] animate-ping" />
-                    <span>Routing to {activeLens.toUpperCase()} specialist...</span>
-                  </div>
-                )}
+            <div className="min-w-0 md:pl-9">
+              {currentToolStatus && (
+                <div
+                  className="anim-fade mb-5 flex items-center gap-3 rounded-[12px] px-3.5 py-2.5"
+                  style={{ background: 'var(--glass-1)', border: '1px solid var(--line)' }}
+                >
+                  <Cpu className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--text-3)' }} />
+                  <span className="font-mono text-[10.5px] uppercase tracking-[0.14em]" style={{ color: 'var(--text-2)' }}>
+                    {currentToolStatus}
+                  </span>
+                  <span className="nv-meter nv-meter--sweep ml-auto h-[3px] max-w-[160px]" />
+                </div>
+              )}
 
-                {/* Streamed Tokens with Word-Level Reveal (last 12 words animated) */}
-                {streamingText && (
-                  <div className="editorial-reply whitespace-pre-wrap font-sans text-[17px] leading-[1.7] text-[var(--text)]">
-                    {(() => {
-                      const words = streamingText.split(' ');
-                      const threshold = Math.max(0, words.length - 12);
-                      const staticPart = words.slice(0, threshold).join(' ');
-                      const freshWords = words.slice(threshold);
+              {isThinking && !streamingText && (
+                <div className="flex items-center gap-3 py-1">
+                  <span className="nv-spinner" />
+                  <span className="nv-shimmer text-[13px] font-medium">
+                    Routing to the {activeLens} specialist…
+                  </span>
+                </div>
+              )}
 
-                      return (
-                        <>
-                          {staticPart && <span>{staticPart} </span>}
-                          {freshWords.map((w, idx) => (
-                            <span key={threshold + idx} className="word-reveal-fresh mr-1">
-                              {w}{' '}
-                            </span>
-                          ))}
-                        </>
-                      );
-                    })()}
-                  </div>
-                )}
-              </div>
+              {streamingText && (
+                <div className="editorial-reply">
+                  {(() => {
+                    const words = streamingText.split(' ');
+                    const cut = Math.max(0, words.length - 10);
+                    return (
+                      <>
+                        {words.slice(0, cut).join(' ')}
+                        {cut > 0 ? ' ' : ''}
+                        {words.slice(cut).map((w, i) => (
+                          <span key={`${cut}-${i}`} className="nv-word">
+                            {w}
+                            {i < words.length - cut - 1 ? '\u00A0' : ''}
+                          </span>
+                        ))}
+                        <span className="nv-caret" />
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Error or Disconnect Banner */}
+        {/* ── Error ─────────────────────────────────────────────── */}
         {streamingError && (
-          <div className="my-6 p-4 rounded-[12px] bg-[var(--elev-1)] border border-[var(--line-strong)] flex items-center justify-between max-w-[720px] ml-0 md:ml-[200px]">
-            <div className="flex items-center gap-3 text-[13px] text-[var(--text-2)]">
-              <AlertCircle className="w-4 h-4 text-[var(--text)] shrink-0" />
-              <span>{streamingError}</span>
+          <div
+            className="anim-rise my-8 flex flex-wrap items-center gap-3 rounded-[16px] p-4"
+            style={{ background: 'var(--glass-1)', border: '1px solid var(--line-strong)' }}
+          >
+            <span
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+              style={{ background: 'var(--glass-3)', border: '1px solid var(--line)' }}
+            >
+              <AlertTriangle className="h-4 w-4" style={{ color: 'var(--text)' }} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="text-[13px] font-medium" style={{ color: 'var(--text)' }}>
+                Something interrupted the synthesis
+              </div>
+              <div className="mt-0.5 text-[12px]" style={{ color: 'var(--text-3)' }}>
+                {streamingError}
+              </div>
             </div>
             <button
               onClick={() => {
-                const lastUser = [...activeMessages].reverse().find((m) => m.role === 'user');
-                if (lastUser) sendMessage(lastUser.content);
+                const last = [...activeMessages].reverse().find((m) => m.role === 'user');
+                if (last) sendMessage(last.content);
               }}
-              className="px-3 py-1 rounded-[9999px] bg-[var(--text)] text-[var(--bg)] text-[12px] font-medium"
+              className="nv-btn nv-btn--primary nv-btn--sm"
             >
               Retry
             </button>
           </div>
         )}
 
-        <div ref={stageEndRef} />
+        <div ref={endRef} className="h-4" />
       </div>
     </div>
   );

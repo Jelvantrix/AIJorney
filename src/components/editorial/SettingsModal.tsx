@@ -1,21 +1,128 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useChatStore } from '../../lib/store.ts';
+import { getStoredTheme, setStoredTheme, type Theme } from '../../lib/theme.ts';
 import {
   X,
-  Sliders,
   List,
   AlignLeft,
-  Table,
-  Code,
+  Table2,
+  Code2,
   RotateCcw,
   Sparkles,
   Trash2,
   Check,
   Moon,
-  FileCode,
-  Eye,
-  CheckCircle2,
+  Sun,
+  Laptop,
+  MonitorPlay,
+  Palette,
+  FileCode2,
+  Database,
+  type LucideIcon,
 } from 'lucide-react';
+
+type Section = 'response' | 'editor' | 'appearance' | 'data';
+
+const SECTIONS: Array<{ id: Section; label: string; icon: LucideIcon }> = [
+  { id: 'response', label: 'Response', icon: MonitorPlay },
+  { id: 'editor', label: 'Code', icon: FileCode2 },
+  { id: 'appearance', label: 'Appearance', icon: Palette },
+  { id: 'data', label: 'Data', icon: Database },
+];
+
+const Card: React.FC<{
+  active?: boolean;
+  onClick?: () => void;
+  icon?: LucideIcon;
+  title: string;
+  desc?: string;
+  trailing?: React.ReactNode;
+  className?: string;
+  children?: React.ReactNode;
+}> = ({ active, onClick, icon: Icon, title, desc, trailing, className = '', children }) => {
+  const Tag: any = onClick ? 'button' : 'div';
+  return (
+    <Tag
+      onClick={onClick}
+      className={`group flex w-full items-center gap-3 rounded-[12px] px-3.5 py-3 text-left transition-all duration-200 ${className}`}
+      style={{
+        background: active ? 'var(--glass-3)' : 'var(--glass-1)',
+        border: `1px solid ${active ? 'var(--line-strong)' : 'var(--line-faint)'}`,
+        boxShadow: active ? 'var(--shadow-1), var(--shadow-inset)' : 'none',
+        cursor: onClick ? 'pointer' : 'default',
+      }}
+      onMouseEnter={(e: any) => {
+        if (onClick && !active) e.currentTarget.style.background = 'var(--glass-2)';
+      }}
+      onMouseLeave={(e: any) => {
+        if (onClick && !active) e.currentTarget.style.background = 'var(--glass-1)';
+      }}
+    >
+      {Icon && (
+        <span
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px]"
+          style={{ background: 'var(--glass-2)', border: '1px solid var(--line-faint)' }}
+        >
+          <Icon className="h-3.5 w-3.5" style={{ color: active ? 'var(--text)' : 'var(--text-3)' }} />
+        </span>
+      )}
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2">
+          <span className="text-[13px] font-medium" style={{ color: 'var(--text)' }}>
+            {title}
+          </span>
+          {active && <Check className="h-3.5 w-3.5" style={{ color: 'var(--text)' }} />}
+        </span>
+        {desc && (
+          <span className="mt-0.5 block text-[11.5px] leading-snug" style={{ color: 'var(--text-4)' }}>
+            {desc}
+          </span>
+        )}
+        {children}
+      </span>
+      {trailing}
+    </Tag>
+  );
+};
+
+const Toggle: React.FC<{ on: boolean; onChange: () => void }> = ({ on, onChange }) => (
+  <button
+    onClick={onChange}
+    role="switch"
+    aria-checked={on}
+    className="relative flex h-6 w-11 shrink-0 items-center rounded-full px-[3px] transition-colors duration-200"
+    style={{
+      background: on ? 'var(--text)' : 'var(--glass-4)',
+      border: `1px solid ${on ? 'transparent' : 'var(--line)'}`,
+    }}
+  >
+    <span
+      className="h-[18px] w-[18px] rounded-full transition-transform duration-200"
+      style={{
+        background: on ? 'var(--bg)' : 'var(--text-2)',
+        transform: on ? 'translateX(20px)' : 'translateX(0)',
+        boxShadow: 'var(--shadow-1)',
+      }}
+    />
+  </button>
+);
+
+const Row: React.FC<{ title: string; desc: string; children: React.ReactNode }> = ({ title, desc, children }) => (
+  <div
+    className="flex items-center justify-between gap-4 rounded-[12px] px-3.5 py-3"
+    style={{ background: 'var(--glass-1)', border: '1px solid var(--line-faint)' }}
+  >
+    <div className="min-w-0">
+      <div className="text-[13px] font-medium" style={{ color: 'var(--text)' }}>
+        {title}
+      </div>
+      <div className="mt-0.5 text-[11.5px] leading-snug" style={{ color: 'var(--text-4)' }}>
+        {desc}
+      </div>
+    </div>
+    <div className="shrink-0">{children}</div>
+  </div>
+);
 
 export const SettingsModal: React.FC = () => {
   const {
@@ -37,322 +144,273 @@ export const SettingsModal: React.FC = () => {
     setActiveConversation,
   } = useChatStore();
 
-  const [confirmClearChats, setConfirmClearChats] = useState(false);
-  const [resetSuccess, setResetSuccess] = useState(false);
+  const [section, setSection] = useState<Section>('response');
+  const [theme, setTheme] = useState<Theme>(getStoredTheme());
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [resetDone, setResetDone] = useState(false);
+
+  useEffect(() => {
+    if (isSettingsOpen) {
+      setTheme(getStoredTheme());
+      setConfirmClear(false);
+    }
+  }, [isSettingsOpen]);
+
+  useEffect(() => {
+    if (!isSettingsOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setSettingsOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isSettingsOpen, setSettingsOpen]);
 
   if (!isSettingsOpen) return null;
 
-  const handleClearAllChats = () => {
-    // Reset to a single fresh empty chat
-    const id = newChat('Untitled Space');
-    setActiveConversation(id);
-    setConfirmClearChats(false);
+  const pick = (t: Theme) => {
+    setTheme(t);
+    setStoredTheme(t);
   };
 
-  const handleResetDefaults = () => {
+  const reset = () => {
     setOutputStyle('lists');
     setResponseDepth('concise');
     setShowLineNumbers(true);
     setCodeFontSize('base');
     setReduceEffects(false);
-    setResetSuccess(true);
-    setTimeout(() => setResetSuccess(false), 2000);
+    pick('system');
+    setResetDone(true);
+    setTimeout(() => setResetDone(false), 2000);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-2xl animate-[wordReveal_160ms_ease-out] select-none">
-      <div className="relative w-full max-w-xl max-h-[88vh] rounded-[24px] bg-[#0A0A0A] border border-[var(--line-strong)] shadow-2xl flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="p-5 px-6 border-b border-[var(--line)] flex items-center justify-between bg-[#111111]">
-          <div className="flex items-center gap-2.5">
-            <Sliders className="w-4 h-4 text-[var(--text)]" />
-            <span className="font-serif-display text-2xl text-[var(--text)]">Settings & Preferences</span>
-          </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+      <div className="nv-scrim" onClick={() => setSettingsOpen(false)} />
 
-          <button
-            onClick={() => setSettingsOpen(false)}
-            className="p-1.5 rounded-[6px] text-[var(--text-3)] hover:text-[var(--text)] hover:bg-[var(--elev-3)] transition-colors"
-            title="Close Settings (Esc)"
-          >
-            <X className="w-4 h-4" />
+      <div className="nv-modal flex w-full max-w-[880px] flex-col" style={{ height: 'min(84vh, 680px)' }}>
+        {/* Header */}
+        <div
+          className="flex items-center justify-between px-5 py-4"
+          style={{ borderBottom: '1px solid var(--line)' }}
+        >
+          <div>
+            <h2 className="nv-display text-[22px] leading-none">Preferences</h2>
+            <div className="nv-label mt-1.5 !text-[9px]">Noevix · local configuration</div>
+          </div>
+          <button onClick={() => setSettingsOpen(false)} className="nv-iconbtn nv-iconbtn--sm">
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-7">
-          {/* 1. Preferred Output Structure: Lists vs Paragraphs vs Tables vs Code */}
-          <div className="space-y-3">
-            <div>
-              <span className="font-mono text-[11px] uppercase tracking-wider text-[var(--text-3)] block">
-                Default Response Format Style
-              </span>
-              <p className="text-[13px] text-[var(--text-2)] mt-0.5">
-                Configure how Noevix structures syntheses and solutions.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5">
-              {[
-                {
-                  id: 'lists',
-                  label: 'Lists & Outlines',
-                  desc: 'High-density bullet points & rapid scanning',
-                  icon: List,
-                },
-                {
-                  id: 'paragraphs',
-                  label: 'Paragraphs & Prose',
-                  desc: 'Editorial narrative, deep explanations & context',
-                  icon: AlignLeft,
-                },
-                {
-                  id: 'code_first',
-                  label: 'Code-First',
-                  desc: 'Prioritize executable code blocks foremost',
-                  icon: Code,
-                },
-                {
-                  id: 'tables',
-                  label: 'Tables & Matrix',
-                  desc: 'Comparison matrices & trade-off analysis',
-                  icon: Table,
-                },
-              ].map((style) => {
-                const Icon = style.icon;
-                const isSelected = outputStyle === style.id;
-                return (
-                  <button
-                    key={style.id}
-                    onClick={() => setOutputStyle(style.id as any)}
-                    className={`p-3.5 rounded-[12px] border text-left transition-all flex flex-col justify-between min-h-[96px] ${
-                      isSelected
-                        ? 'bg-[#161616] border-[var(--text)] text-[var(--text)] shadow-xs'
-                        : 'bg-[#0E0E0E] border-[var(--line)] hover:bg-[#141414] text-[var(--text-2)]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <Icon className="w-4 h-4" />
-                      {isSelected && <Check className="w-3.5 h-3.5 text-[var(--text)]" />}
-                    </div>
-                    <div>
-                      <div className="font-medium text-[13.5px] mt-2">{style.label}</div>
-                      <div className="text-[11px] text-[var(--text-3)] leading-tight mt-0.5">{style.desc}</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="w-full h-[1px] bg-[var(--line)]" />
-
-          {/* 2. Response Detail Depth */}
-          <div className="space-y-3">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-[var(--text-3)] block">
-              Response Depth & Verbosity
-            </span>
-
-            <div className="grid grid-cols-2 gap-2.5">
-              {[
-                { id: 'concise', label: 'Concise & Direct', desc: 'Direct technical answers with zero conversational filler' },
-                { id: 'comprehensive', label: 'Deep Architectural', desc: 'Comprehensive context, proofs, invariants, and edge cases' },
-              ].map((d) => (
+        <div className="flex min-h-0 flex-1">
+          {/* Nav */}
+          <nav
+            className="hidden w-[196px] shrink-0 flex-col gap-0.5 p-2.5 sm:flex"
+            style={{ borderRight: '1px solid var(--line)', background: 'var(--glass-1)' }}
+          >
+            {SECTIONS.map((s) => {
+              const Icon = s.icon;
+              const active = section === s.id;
+              return (
                 <button
-                  key={d.id}
-                  onClick={() => setResponseDepth(d.id as any)}
-                  className={`p-3 rounded-[10px] border text-left transition-all ${
-                    responseDepth === d.id
-                      ? 'bg-[#161616] border-[var(--text)] text-[var(--text)]'
-                      : 'bg-[#0E0E0E] border-[var(--line)] text-[var(--text-2)] hover:bg-[#141414]'
-                  }`}
+                  key={s.id}
+                  onClick={() => setSection(s.id)}
+                  className="relative flex items-center gap-2.5 rounded-[9px] px-3 py-2 text-left text-[13px] transition-colors"
+                  style={{
+                    color: active ? 'var(--text)' : 'var(--text-2)',
+                    background: active ? 'var(--glass-3)' : 'transparent',
+                    boxShadow: active ? 'var(--shadow-inset)' : 'none',
+                  }}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px] font-medium">{d.label}</span>
-                    {responseDepth === d.id && <Check className="w-3 h-3" />}
-                  </div>
-                  <span className="text-[11px] text-[var(--text-3)] block mt-0.5">{d.desc}</span>
+                  <Icon className="h-3.5 w-3.5" style={{ color: active ? 'var(--text)' : 'var(--text-3)' }} />
+                  {s.label}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Panel */}
+          <div className="nv-scroll min-w-0 flex-1 overflow-y-auto p-5">
+            {/* Mobile section switch */}
+            <div className="mb-4 flex flex-wrap gap-1.5 sm:hidden">
+              {SECTIONS.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setSection(s.id)}
+                  className="nv-pill !h-7 !text-[11px]"
+                  data-active={section === s.id}
+                >
+                  {s.label}
                 </button>
               ))}
             </div>
-          </div>
 
-          <div className="w-full h-[1px] bg-[var(--line)]" />
-
-          {/* 3. Code Editor Theme & Gutter Settings */}
-          <div className="space-y-3.5">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-[var(--text-3)] block">
-              Code Editor Blocks
-            </span>
-
-            {/* Line numbers toggle */}
-            <div className="flex items-center justify-between p-3.5 rounded-[10px] bg-[#0E0E0E] border border-[var(--line)]">
-              <div>
-                <span className="text-[13.5px] font-medium block">Show Gutter Line Numbers</span>
-                <span className="text-[11px] text-[var(--text-3)]">
-                  Displays line number column inside code blocks.
-                </span>
-              </div>
-              <button
-                onClick={() => setShowLineNumbers(!showLineNumbers)}
-                className={`w-11 h-6 rounded-full transition-colors relative flex items-center px-0.5 ${
-                  showLineNumbers ? 'bg-[var(--text)]' : 'bg-[#1C1C1C]'
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 rounded-full bg-[var(--bg)] transition-transform duration-150 ${
-                    showLineNumbers ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* Code font size */}
-            <div className="flex items-center justify-between p-3.5 rounded-[10px] bg-[#0E0E0E] border border-[var(--line)]">
-              <div>
-                <span className="text-[13.5px] font-medium block">Editor Font Scale</span>
-                <span className="text-[11px] text-[var(--text-3)]">Adjust typography size for code snippets</span>
-              </div>
-              <div className="flex items-center gap-1 rounded-[8px] bg-[#141414] p-0.5 border border-[var(--line)]">
-                {(['sm', 'base', 'lg'] as const).map((sz) => (
-                  <button
-                    key={sz}
-                    onClick={() => setCodeFontSize(sz)}
-                    className={`px-3 py-1 rounded-[6px] text-[11px] font-mono uppercase transition-colors ${
-                      codeFontSize === sz
-                        ? 'bg-[var(--text)] text-[var(--bg)] font-bold'
-                        : 'text-[var(--text-3)] hover:text-[var(--text)]'
-                    }`}
-                  >
-                    {sz === 'sm' ? '12px' : sz === 'base' ? '13px' : '15px'}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="w-full h-[1px] bg-[var(--line)]" />
-
-          {/* 4. Atmosphere, Effects & Theme */}
-          <div className="space-y-3.5">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-[var(--text-3)] block">
-              Atmosphere & Theme
-            </span>
-
-            {/* Dark Theme Notice */}
-            <div className="flex items-center justify-between p-3.5 rounded-[10px] bg-[#0E0E0E] border border-[var(--line)]">
-              <div className="flex items-center gap-3">
-                <Moon className="w-4 h-4 text-[var(--text)]" />
+            {section === 'response' && (
+              <div className="anim-fade space-y-5">
                 <div>
-                  <span className="text-[13.5px] font-medium block">Obsidian Dark Mode</span>
-                  <span className="text-[11px] text-[var(--text-3)]">Pure deep dark canvas with zero white gradient light</span>
+                  <div className="nv-label mb-2">Answer shape</div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {[
+                      { id: 'lists', label: 'Lists & outlines', desc: 'High-density scanning', icon: List },
+                      { id: 'paragraphs', label: 'Prose', desc: 'Editorial narrative', icon: AlignLeft },
+                      { id: 'code_first', label: 'Code first', desc: 'Executable answers lead', icon: Code2 },
+                      { id: 'tables', label: 'Comparison', desc: 'Trade-off matrices', icon: Table2 },
+                    ].map((s) => (
+                      <Card
+                        key={s.id}
+                        icon={s.icon}
+                        title={s.label}
+                        desc={s.desc}
+                        active={outputStyle === s.id}
+                        onClick={() => setOutputStyle(s.id as any)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="nv-hair" />
+
+                <div>
+                  <div className="nv-label mb-2">Depth</div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {[
+                      { id: 'concise', label: 'Direct', desc: 'No filler, signal only' },
+                      { id: 'comprehensive', label: 'Architectural', desc: 'Context, proofs, edge cases' },
+                    ].map((d) => (
+                      <Card
+                        key={d.id}
+                        title={d.label}
+                        desc={d.desc}
+                        active={responseDepth === d.id}
+                        onClick={() => setResponseDepth(d.id as any)}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
-              <span className="font-mono text-[10px] px-2 py-0.5 rounded-[4px] bg-[#161616] text-[var(--text-3)]">
-                LOCKED DARK
-              </span>
-            </div>
+            )}
 
-            {/* Reduce Effects toggle */}
-            <div className="flex items-center justify-between p-3.5 rounded-[10px] bg-[#0E0E0E] border border-[var(--line)]">
-              <div>
-                <span className="text-[13.5px] font-medium block">Reduce Atmospheric Effects</span>
-                <span className="text-[11px] text-[var(--text-3)]">
-                  Disables grain texture and rotating border highlight.
-                </span>
+            {section === 'editor' && (
+              <div className="anim-fade space-y-2.5">
+                <Row title="Gutter line numbers" desc="Show the line-number column in code blocks.">
+                  <Toggle on={showLineNumbers} onChange={() => setShowLineNumbers(!showLineNumbers)} />
+                </Row>
+                <Row title="Code type scale" desc="Typography size inside code blocks.">
+                  <div className="nv-seg">
+                    {(['sm', 'base', 'lg'] as const).map((sz) => (
+                      <button
+                        key={sz}
+                        data-active={codeFontSize === sz}
+                        onClick={() => setCodeFontSize(sz)}
+                        className="nv-seg__item !px-3 font-mono"
+                      >
+                        {sz === 'sm' ? '12' : sz === 'base' ? '13' : '14'}
+                      </button>
+                    ))}
+                  </div>
+                </Row>
               </div>
-              <button
-                onClick={() => setReduceEffects(!reduceEffects)}
-                className={`w-11 h-6 rounded-full transition-colors relative flex items-center px-0.5 ${
-                  reduceEffects ? 'bg-[var(--text)]' : 'bg-[#1C1C1C]'
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 rounded-full bg-[var(--bg)] transition-transform duration-150 ${
-                    reduceEffects ? 'translate-x-5' : 'translate-x-0'
-                  }`}
+            )}
+
+            {section === 'appearance' && (
+              <div className="anim-fade space-y-5">
+                <div>
+                  <div className="nv-label mb-2">Canvas</div>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {[
+                      { id: 'dark', label: 'Obsidian', desc: 'Pure dark', icon: Moon },
+                      { id: 'light', label: 'Paper', desc: 'Ink on white', icon: Sun },
+                      { id: 'system', label: 'System', desc: 'Follow OS', icon: Laptop },
+                    ].map((t) => (
+                      <Card
+                        key={t.id}
+                        icon={t.icon}
+                        title={t.label}
+                        desc={t.desc}
+                        active={theme === t.id}
+                        onClick={() => pick(t.id as Theme)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="nv-hair" />
+
+                <Row
+                  title="Damp ambient motion"
+                  desc="Disable the grain, bloom and reactive aura."
+                >
+                  <Toggle on={reduceEffects} onChange={() => setReduceEffects(!reduceEffects)} />
+                </Row>
+              </div>
+            )}
+
+            {section === 'data' && (
+              <div className="anim-fade space-y-2.5">
+                <Card
+                  icon={Sparkles}
+                  title="Replay the guided tour"
+                  desc="Walk through the interface once more."
+                  onClick={() => {
+                    setSettingsOpen(false);
+                    startOnboarding();
+                  }}
                 />
-              </button>
-            </div>
-          </div>
 
-          <div className="w-full h-[1px] bg-[var(--line)]" />
+                <Card
+                  icon={RotateCcw}
+                  title={resetDone ? 'Preferences restored' : 'Restore defaults'}
+                  desc="Return every setting to its factory value."
+                  onClick={reset}
+                />
 
-          {/* 5. Onboarding & Reset Actions */}
-          <div className="space-y-3">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-[var(--text-3)] block">
-              Tools & Data Management
-            </span>
-
-            {/* Replay Onboarding button */}
-            <button
-              onClick={() => {
-                setSettingsOpen(false);
-                startOnboarding();
-              }}
-              className="w-full py-2.5 px-4 rounded-[10px] border border-[var(--line)] hover:bg-[#141414] text-[13px] font-mono text-[var(--text-2)] hover:text-[var(--text)] transition-colors flex items-center justify-center gap-2"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Launch Animated Onboarding Screen</span>
-            </button>
-
-            {/* Reset to defaults */}
-            <button
-              onClick={handleResetDefaults}
-              className="w-full py-2 px-4 rounded-[10px] bg-[#0E0E0E] hover:bg-[#141414] border border-[var(--line)] text-[12px] font-mono text-[var(--text-3)] hover:text-[var(--text)] transition-colors flex items-center justify-center gap-2"
-            >
-              {resetSuccess ? (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[var(--text)]" />
-                  <span>Settings Reset to Defaults</span>
-                </>
-              ) : (
-                <>
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Reset All Settings to Defaults</span>
-                </>
-              )}
-            </button>
-
-            {/* Clear All Chats */}
-            {confirmClearChats ? (
-              <div className="p-3 rounded-[10px] bg-[#161616] border border-[var(--line-strong)] space-y-2">
-                <span className="text-[12px] text-[var(--text)] block font-medium">
-                  Are you sure you want to clear all chat spaces?
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleClearAllChats}
-                    className="px-3 py-1 rounded-[6px] bg-[var(--text)] text-[var(--bg)] text-[12px] font-medium"
+                {confirmClear ? (
+                  <div
+                    className="rounded-[12px] p-3.5"
+                    style={{ background: 'var(--glass-2)', border: '1px solid var(--line-strong)' }}
                   >
-                    Confirm Clear
-                  </button>
-                  <button
-                    onClick={() => setConfirmClearChats(false)}
-                    className="px-3 py-1 rounded-[6px] border border-[var(--line)] text-[12px] text-[var(--text-3)] hover:text-[var(--text)]"
-                  >
-                    Cancel
-                  </button>
-                </div>
+                    <div className="text-[13px] font-medium" style={{ color: 'var(--text)' }}>
+                      Clear all {conversations.length} spaces?
+                    </div>
+                    <p className="mt-1 text-[11.5px]" style={{ color: 'var(--text-4)' }}>
+                      This removes every thread stored on this device. It cannot be undone.
+                    </p>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => {
+                          const id = newChat('Untitled Space');
+                          setActiveConversation(id);
+                          setConfirmClear(false);
+                        }}
+                        className="nv-btn nv-btn--primary nv-btn--sm"
+                      >
+                        Confirm
+                      </button>
+                      <button onClick={() => setConfirmClear(false)} className="nv-btn nv-btn--sm">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <Card
+                    icon={Trash2}
+                    title="Clear all spaces"
+                    desc={`Remove ${conversations.length} threads from this device.`}
+                    onClick={() => setConfirmClear(true)}
+                  />
+                )}
               </div>
-            ) : (
-              <button
-                onClick={() => setConfirmClearChats(true)}
-                className="w-full py-2 px-4 rounded-[10px] text-[12px] font-mono text-[var(--text-3)] hover:text-[var(--text)] transition-colors flex items-center justify-center gap-2"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Clear Chat History ({conversations.length} spaces)</span>
-              </button>
             )}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-4 px-6 border-t border-[var(--line)] bg-[#0E0E0E] flex items-center justify-between text-[11px] font-mono text-[var(--text-3)]">
-          <span>Dark Mode Active</span>
-          <button
-            onClick={() => setSettingsOpen(false)}
-            className="px-5 py-1.5 rounded-[9999px] bg-[var(--text)] text-[var(--bg)] text-[12px] font-semibold hover:opacity-90 transition-opacity"
-          >
+        <div
+          className="flex items-center justify-between px-5 py-3"
+          style={{ borderTop: '1px solid var(--line)', background: 'var(--glass-1)' }}
+        >
+          <span className="nv-label !text-[9px]">
+            {theme === 'dark' ? 'Obsidian active' : theme === 'light' ? 'Paper active' : 'System synced'}
+          </span>
+          <button onClick={() => setSettingsOpen(false)} className="nv-btn nv-btn--primary nv-btn--sm">
             Done
           </button>
         </div>

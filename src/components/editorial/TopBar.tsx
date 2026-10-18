@@ -1,268 +1,175 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useChatStore } from '../../lib/store.ts';
 import {
-  Plus,
-  MessageSquare,
   Search,
-  Sliders,
+  Pencil,
   Check,
-  Edit2,
-  User,
+  Download,
+  PanelLeft,
+  ChevronRight,
   Sparkles,
-  ChevronDown,
-  Trash2,
-  Menu,
 } from 'lucide-react';
 
 export const TopBar: React.FC = () => {
   const {
     activeId,
     conversations,
+    messages,
     renameConversation,
-    newChat,
-    setActiveConversation,
-    deleteConversation,
-    setIndexOpen,
     setSpacesMenuOpen,
-    setSettingsOpen,
-    setCurrentView,
-    setAuthModalOpen,
+    setIndexOpen,
+    exportSpace,
+    isStreaming,
+    activeLens,
+    selectedLensOverride,
   } = useChatStore();
 
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [titleInput, setTitleInput] = useState('');
-  const [isQuickChatsOpen, setIsQuickChatsOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const quickChatsRef = useRef<HTMLDivElement>(null);
 
-  const activeSpace = conversations.find((c) => c.id === activeId);
+  const space = conversations.find((c) => c.id === activeId);
+  const convo = (activeId && messages[activeId]) || [];
 
-  // Close quick chats dropdown on click outside
+  const stats = useMemo(() => {
+    const exchanges = convo.filter((m) => m.role === 'user').length;
+    const tokens = convo.reduce((acc, m) => acc + (m.tokens || 0), 0);
+    return { exchanges, tokens };
+  }, [convo]);
+
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (quickChatsRef.current && !quickChatsRef.current.contains(e.target as Node)) {
-        setIsQuickChatsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    if (editing) setTimeout(() => inputRef.current?.select(), 20);
+  }, [editing]);
 
-  const handleTitleSubmit = () => {
-    if (activeId && titleInput.trim()) {
-      renameConversation(activeId, titleInput.trim());
-    }
-    setIsEditingTitle(false);
+  const commit = () => {
+    if (activeId && draft.trim()) renameConversation(activeId, draft.trim());
+    setEditing(false);
   };
 
-  const handleNewChat = () => {
-    const id = newChat('Untitled Space');
-    setActiveConversation(id);
-    setIsQuickChatsOpen(false);
+  const handleExport = () => {
+    if (!activeId) return;
+    const md = exportSpace(activeId);
+    const blob = new Blob([md], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(space?.title || 'space').toLowerCase().replace(/\s+/g, '-')}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
+
+  const lensLabel = (selectedLensOverride === 'auto' ? activeLens : selectedLensOverride).toUpperCase();
 
   return (
-    <header className="fixed top-0 inset-x-0 h-13 z-40 px-4 sm:px-6 flex items-center justify-between border-b border-[var(--line)] bg-[#000000]/95 backdrop-blur-md shadow-md select-none">
-      {/* Left: Brand + Prominent "+ New Chat" + "Chats Menu" */}
-      <div className="flex items-center gap-2 sm:gap-3">
-        {/* Brand */}
-        <button
-          onClick={() => setCurrentView('marketing')}
-          className="font-serif-display text-2xl font-normal tracking-tight text-[var(--text)] hover:opacity-80 transition-opacity"
-          title="Return to Noevix Homepage"
-        >
-          Noevix
-        </button>
+    <header
+      className="nv-topline relative z-20 flex h-[var(--topbar-h)] shrink-0 items-center gap-3 px-4"
+      style={{
+        borderBottom: '1px solid var(--line)',
+        background: 'color-mix(in srgb, var(--bg) 82%, transparent)',
+        backdropFilter: 'blur(16px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+      }}
+    >
+      {/* Mobile rail trigger */}
+      <button
+        onClick={() => setSpacesMenuOpen(true)}
+        className="nv-iconbtn nv-iconbtn--sm lg:hidden"
+        aria-label="Open spaces"
+      >
+        <PanelLeft className="h-4 w-4" />
+      </button>
 
-        <div className="h-4 w-[1px] bg-[var(--line)] mx-1 hidden sm:block" />
+      {/* Breadcrumb */}
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <span className="nv-label hidden shrink-0 sm:inline">Space</span>
+        <ChevronRight className="hidden h-3 w-3 shrink-0 sm:block" style={{ color: 'var(--text-4)' }} />
 
-        {/* Primary "+ New Chat" Button */}
-        <button
-          onClick={handleNewChat}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[9999px] bg-[var(--text)] text-[var(--bg)] text-[12px] font-semibold hover:opacity-90 active:scale-95 transition-all shadow-sm"
-          title="Create a new conversation space"
-        >
-          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-          <span>New Chat</span>
-        </button>
-
-        {/* Chats Dropdown / Drawer Button */}
-        <div className="relative" ref={quickChatsRef}>
-          <button
-            onClick={() => setIsQuickChatsOpen(!isQuickChatsOpen)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[9999px] border text-[12px] font-mono transition-colors ${
-              isQuickChatsOpen
-                ? 'bg-[var(--elev-2)] border-[var(--text)] text-[var(--text)]'
-                : 'bg-[var(--elev-1)] border-[var(--line)] text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--elev-2)]'
-            }`}
-            title="Switch or manage chats"
-          >
-            <Menu className="w-3.5 h-3.5 text-[var(--text-3)]" />
-            <span className="font-medium">Chats</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--elev-3)] text-[var(--text-3)]">
-              {conversations.length}
-            </span>
-            <ChevronDown className="w-3 h-3 text-[var(--text-3)]" />
-          </button>
-
-          {/* Quick Chat Switcher Dropdown */}
-          {isQuickChatsOpen && (
-            <div className="absolute left-0 top-full mt-2 w-72 sm:w-80 rounded-[16px] bg-[#0A0A0A] border border-[var(--line-strong)] shadow-2xl p-2 z-50 animate-[wordReveal_140ms_ease-out]">
-              <div className="px-2.5 py-1.5 flex items-center justify-between border-b border-[var(--line)] mb-1">
-                <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--text-3)]">
-                  Your Spaces ({conversations.length})
-                </span>
-                <button
-                  onClick={() => {
-                    setIsQuickChatsOpen(false);
-                    setSpacesMenuOpen(true);
-                  }}
-                  className="font-mono text-[10px] text-[var(--text-3)] hover:text-[var(--text)] underline"
-                >
-                  Full Drawer
-                </button>
-              </div>
-
-              {/* Action: + New Chat in dropdown */}
-              <button
-                onClick={handleNewChat}
-                className="w-full mb-1 px-3 py-2 rounded-[8px] bg-[var(--elev-2)] hover:bg-[var(--elev-3)] text-[12.5px] font-medium text-[var(--text)] flex items-center gap-2 transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Start New Space</span>
-              </button>
-
-              {/* Chat items list */}
-              <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
-                {conversations.map((c) => {
-                  const isActive = c.id === activeId;
-                  return (
-                    <div
-                      key={c.id}
-                      onClick={() => {
-                        setActiveConversation(c.id);
-                        setIsQuickChatsOpen(false);
-                      }}
-                      className={`group flex items-center justify-between p-2 rounded-[8px] cursor-pointer text-left transition-colors ${
-                        isActive
-                          ? 'bg-[var(--elev-3)] text-[var(--text)] font-medium'
-                          : 'hover:bg-[var(--elev-2)] text-[var(--text-2)] hover:text-[var(--text)]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <MessageSquare className="w-3.5 h-3.5 text-[var(--text-3)] shrink-0" />
-                        <span className="text-[13px] truncate">{c.title}</span>
-                      </div>
-
-                      {/* Delete action on hover */}
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {conversations.length > 1 && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteConversation(c.id);
-                            }}
-                            className="p-1 rounded-[4px] hover:bg-[var(--elev-1)] text-[var(--text-3)] hover:text-[var(--text)]"
-                            title="Delete Chat"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        )}
-                        {isActive && <Check className="w-3.5 h-3.5 text-[var(--text)] ml-1" />}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Index shortcut */}
-              <div className="pt-2 mt-1 border-t border-[var(--line)] px-2 flex items-center justify-between text-[10px] font-mono text-[var(--text-3)]">
-                <span>Search all spaces</span>
-                <kbd className="px-1.5 py-0.5 rounded bg-[var(--elev-2)] border border-[var(--line)]">⌘K</kbd>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Center: Current Space Title (Editable inline) */}
-      <div className="flex-1 max-w-xs sm:max-w-md mx-auto text-center px-2">
-        {isEditingTitle ? (
-          <div className="flex items-center justify-center gap-2">
+        {editing ? (
+          <div className="nv-field h-10 max-w-[420px] flex-1 px-2.5 lg:h-8">
             <input
               ref={inputRef}
-              type="text"
-              value={titleInput}
-              onChange={(e) => setTitleInput(e.target.value)}
-              onBlur={handleTitleSubmit}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commit}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleTitleSubmit();
-                if (e.key === 'Escape') setIsEditingTitle(false);
+                if (e.key === 'Enter') commit();
+                if (e.key === 'Escape') setEditing(false);
               }}
+              className="!text-[14px]"
               autoFocus
-              className="bg-[var(--elev-2)] text-[13.5px] text-[var(--text)] px-3 py-1 rounded-[6px] border border-[var(--line-strong)] text-center outline-none w-full max-w-[260px]"
             />
-            <button
-              onClick={handleTitleSubmit}
-              className="p-1 text-[var(--text-3)] hover:text-[var(--text)]"
-            >
-              <Check className="w-3.5 h-3.5" />
+            <button onClick={commit} className="nv-iconbtn nv-iconbtn--sm !h-8 !w-8 lg:!h-6 lg:!w-6">
+              <Check className="h-3.5 w-3.5" />
             </button>
           </div>
         ) : (
           <button
             onClick={() => {
-              setTitleInput(activeSpace?.title || 'Untitled Space');
-              setIsEditingTitle(true);
+              setDraft(space?.title || 'Untitled Space');
+              setEditing(true);
             }}
-            className="group inline-flex items-center gap-1.5 text-[13.5px] text-[var(--text-2)] hover:text-[var(--text)] transition-colors truncate max-w-full"
-            title="Click to rename chat title"
+            className="group flex min-h-[40px] min-w-0 items-center gap-2 rounded-[8px] px-2 py-1 transition-colors lg:min-h-0"
+            style={{ color: 'var(--text)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--glass-2)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            title="Rename this space"
           >
-            <span className="truncate">{activeSpace?.title || 'Untitled Space'}</span>
-            <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
+            <span
+              className="truncate text-[14px] font-medium tracking-[-0.01em]"
+              style={{ color: 'var(--text)' }}
+            >
+              {space?.title || 'Untitled Space'}
+            </span>
+            <Pencil
+              className="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-60"
+              style={{ color: 'var(--text-2)' }}
+            />
           </button>
         )}
       </div>
 
-      {/* Right Controls: Index (⌘K), Settings, Lab, Account */}
-      <div className="flex items-center gap-1.5 sm:gap-2">
-        {/* Lab Link */}
-        <button
-          onClick={() => setCurrentView('lab')}
-          className="hidden md:flex items-center gap-1 px-2.5 py-1 text-[11px] font-mono text-[var(--text-3)] hover:text-[var(--text)] transition-colors rounded-[9999px] border border-transparent hover:border-[var(--line)]"
-          title="Aura State Machine Lab"
-        >
-          <Sparkles className="w-3 h-3" />
-          <span>Lab</span>
-        </button>
+      {/* Telemetry */}
+      <div className="hidden items-center gap-2 md:flex">
+        {isStreaming ? (
+          <span className="nv-badge" style={{ color: 'var(--text)' }}>
+            <span className="nv-dot nv-dot--live" />
+            {lensLabel}
+          </span>
+        ) : (
+          <span className="nv-chip">
+            <Sparkles className="h-3 w-3" />
+            {lensLabel}
+          </span>
+        )}
+        <span className="nv-chip">
+          <span className="nv-num">{String(stats.exchanges).padStart(2, '0')}</span> turns
+        </span>
+        <span className="nv-chip">
+          <span className="nv-num">{stats.tokens.toLocaleString()}</span> tok
+        </span>
+      </div>
 
-        {/* Index Overlay Button (⌘K) */}
+      <span className="hidden h-5 w-px md:block" style={{ background: 'var(--line)' }} />
+
+      {/* Actions */}
+      <div className="flex items-center gap-1.5">
         <button
           onClick={() => setIndexOpen(true)}
-          className="flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-[9999px] border border-[var(--line)] text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--elev-1)] transition-all font-mono"
-          title="Search Spaces (⌘K)"
+          className="nv-btn nv-btn--sm"
+          style={{ color: 'var(--text-2)' }}
+          title="Search everything"
         >
-          <Search className="w-3 h-3" />
-          <span className="hidden sm:inline">Index</span>
-          <kbd className="text-[9px] text-[var(--text-3)] ml-0.5">⌘K</kbd>
+          <Search className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Search</span>
+          <span className="nv-kbd ml-1 hidden h-[16px] text-[9px] sm:inline-flex">⌘K</span>
         </button>
 
-        {/* Settings Button */}
         <button
-          onClick={() => setSettingsOpen(true)}
-          className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--elev-1)] transition-colors"
-          title="Preferences & Settings (Lists, Paragraphs, Code theme)"
+          onClick={handleExport}
+          className="nv-iconbtn nv-iconbtn--sm"
+          title="Export space as Markdown"
         >
-          <Sliders className="w-3.5 h-3.5" />
-        </button>
-
-        {/* Auth / Account */}
-        <button
-          onClick={() => setAuthModalOpen(true, 'login')}
-          className="w-8 h-8 rounded-full border border-[var(--line)] flex items-center justify-center text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--elev-1)] transition-colors"
-          title="Account & Auth"
-        >
-          <User className="w-3.5 h-3.5" />
+          <Download className="h-4 w-4" />
         </button>
       </div>
     </header>

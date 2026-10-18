@@ -1,14 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useChatStore } from '../../lib/store.ts';
-import {
-  Copy,
-  Check,
-  FileCode,
-  Maximize2,
-  WrapText,
-  ChevronRight,
-  Terminal,
-} from 'lucide-react';
+import { Copy, Check, FileCode, Maximize2, WrapText, ChevronRight } from 'lucide-react';
 
 interface CodeEditorBlockProps {
   code: string;
@@ -16,81 +8,61 @@ interface CodeEditorBlockProps {
   title?: string;
 }
 
-// Tokenizer to render real code editor themes (keywords, strings, comments, types, numbers)
-function highlightCodeLine(line: string, language: string) {
-  // If line is a comment
-  const trimmed = line.trim();
-  if (trimmed.startsWith('//') || trimmed.startsWith('#') || trimmed.startsWith('/*') || trimmed.startsWith('*')) {
-    return <span className="text-[var(--text-3)] italic font-mono">{line}</span>;
+type Token = { v: string; k: string };
+
+const KEYWORDS = new RegExp(
+  '^(?:const|let|var|function|return|import|export|from|default|class|interface|type|async|await|if|else|switch|case|break|continue|for|while|do|try|catch|finally|throw|new|typeof|instanceof|void|in|of|as|extends|implements|public|private|protected|static|readonly|fn|pub|struct|impl|enum|mut|match|where|use|crate|mod|trait|let|self|Self|def|elif|lambda|yield|with|pass|raise|None|package|func|go|defer|chan|map|range|select|table|insert|into|values|update|delete|create|where|join|group|order|by|limit)$'
+);
+
+const LITERALS = /^(?:true|false|null|undefined|None|Some|Ok|Err|NaN)$/;
+
+function tokenize(line: string): Token[] {
+  const trimmed = line.trimStart();
+  if (/^(\/\/|#|--|\/\*|\*)/.test(trimmed)) {
+    return [{ v: line, k: 'comment' }];
   }
 
-  // Tokenization regex for common editor syntax
-  // Keywords, strings, numbers, operators
-  const tokenRegex = /(".*?"|'.*?'|`.*?`|\/\/.*$|\b(?:const|let|var|function|return|import|export|from|default|class|interface|type|async|await|if|else|switch|case|break|for|while|try|catch|finally|throw|new|typeof|instanceof|void|fn|pub|struct|impl|enum|mut|match|where|use|crate|self|def|elif|lambda|yield|select|from|where|insert|into|values|update|delete|table|create)\b|\b(?:true|false|null|undefined|None|Some|Ok|Err)\b|\b\d+\b|[{}()[\];,])/g;
+  const re =
+    /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`|\/\/.*$|\b[A-Za-z_$][\w$]*\b|\b\d[\d._]*\b|[{}()[\];,.:=+\-*/<>!&|?@]+|\s+)/g;
 
-  const parts = [];
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
+  const out: Token[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
 
-  while ((match = tokenRegex.exec(line)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(
-        <span key={lastIndex} className="text-[var(--text-2)]">
-          {line.slice(lastIndex, match.index)}
-        </span>
-      );
-    }
+  while ((m = re.exec(line)) !== null) {
+    if (m.index > last) out.push({ v: line.slice(last, m.index), k: 'plain' });
+    const t = m[0];
 
-    const token = match[0];
-    if (token.startsWith('"') || token.startsWith("'") || token.startsWith('`')) {
-      // String token
-      parts.push(
-        <span key={match.index} className="text-[var(--text)] opacity-85 underline-offset-2">
-          {token}
-        </span>
-      );
-    } else if (token.startsWith('//')) {
-      // Comment
-      parts.push(
-        <span key={match.index} className="text-[var(--text-3)] italic">
-          {token}
-        </span>
-      );
-    } else if (/^(true|false|null|undefined|None|Some|Ok|Err|\d+)$/.test(token)) {
-      // Literal / Number / Boolean
-      parts.push(
-        <span key={match.index} className="text-[var(--text)] font-semibold opacity-90">
-          {token}
-        </span>
-      );
-    } else if (/^[{}()[\];,]$/.test(token)) {
-      // Bracket / punctuation
-      parts.push(
-        <span key={match.index} className="text-[var(--text-3)]">
-          {token}
-        </span>
-      );
-    } else {
-      // Keyword
-      parts.push(
-        <span key={match.index} className="text-[var(--text)] font-bold tracking-tight">
-          {token}
-        </span>
-      );
-    }
+    if (/^["'`]/.test(t)) out.push({ v: t, k: 'string' });
+    else if (/^\/\//.test(t)) out.push({ v: t, k: 'comment' });
+    else if (KEYWORDS.test(t)) out.push({ v: t, k: 'keyword' });
+    else if (LITERALS.test(t)) out.push({ v: t, k: 'literal' });
+    else if (/^\d/.test(t)) out.push({ v: t, k: 'number' });
+    else if (/^[{}()[\];,.:=+\-*/<>!&|?@]+$/.test(t)) out.push({ v: t, k: 'punct' });
+    else if (/^[A-Z]/.test(t)) out.push({ v: t, k: 'type' });
+    else if (line[m.index + t.length] === '(') out.push({ v: t, k: 'fn' });
+    else out.push({ v: t, k: 'plain' });
 
-    lastIndex = match.index + token.length;
+    last = m.index + t.length;
   }
+  if (last < line.length) out.push({ v: line.slice(last), k: 'plain' });
+  return out;
+}
 
-  if (lastIndex < line.length) {
-    parts.push(
-      <span key={lastIndex} className="text-[var(--text-2)]">
-        {line.slice(lastIndex)}
-      </span>
-    );
-  }
+const TOKEN_CLASS: Record<string, string> = {
+  keyword: 'font-semibold',
+  string: 'opacity-90',
+  comment: 'italic',
+  literal: 'font-medium opacity-90',
+  number: 'font-medium opacity-90',
+  type: 'font-medium',
+  fn: 'font-medium',
+  punct: 'opacity-45',
+  plain: 'opacity-80',
+};
 
-  return parts.length > 0 ? parts : <span>{line || ' '}</span>;
+function escapeHtml(s: string) {
+  return s;
 }
 
 export const CodeEditorBlock: React.FC<CodeEditorBlockProps> = ({ code, language, title }) => {
@@ -100,134 +72,154 @@ export const CodeEditorBlock: React.FC<CodeEditorBlockProps> = ({ code, language
   const [activeLine, setActiveLine] = useState<number | null>(null);
 
   const cleanCode = code.replace(/\n$/, '');
-  const lines = cleanCode.split('\n');
+  const lines = useMemo(() => cleanCode.split('\n'), [cleanCode]);
 
   const lang = (language || 'typescript').toLowerCase();
-  const fileExt =
-    lang === 'rust' ? 'rs' :
-    lang === 'python' ? 'py' :
-    lang === 'go' ? 'go' :
-    lang === 'json' ? 'json' :
-    lang === 'sql' ? 'sql' :
-    lang === 'html' ? 'html' :
-    lang === 'css' ? 'css' :
-    lang === 'bash' || lang === 'sh' ? 'sh' :
-    'ts';
+  const ext =
+    lang === 'rust' ? 'rs' : lang === 'python' ? 'py' : lang === 'go' ? 'go'
+    : lang === 'json' ? 'json' : lang === 'sql' ? 'sql' : lang === 'html' ? 'html'
+    : lang === 'css' ? 'css' : lang === 'bash' || lang === 'sh' ? 'sh'
+    : lang === 'yaml' ? 'yml' : 'ts';
 
-  const displayFilename = title || `solution.${fileExt}`;
-  const breadcrumb = `src/${fileExt === 'rs' ? 'lib' : fileExt === 'py' ? 'core' : 'modules'}/${displayFilename}`;
+  const filename = title || `synthesis.${ext}`;
+  const path = `noevix/${ext === 'rs' ? 'systems' : ext === 'py' ? 'core' : 'lib'}/${filename}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(cleanCode);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 1800);
   };
 
   const handleOpenSheet = () => {
     openArtifact({
       id: 'art_' + Date.now(),
-      title: displayFilename,
+      title: filename,
       language: lang,
       type: 'code',
       content: cleanCode,
     });
   };
 
-  const fontSizeClass =
-    codeFontSize === 'sm' ? 'text-[12px]' : codeFontSize === 'lg' ? 'text-[14.5px]' : 'text-[13px]';
+  const size =
+    codeFontSize === 'sm'
+      ? { fontSize: '11.5px', lineHeight: '1.75' }
+      : codeFontSize === 'lg'
+        ? { fontSize: '14px', lineHeight: '1.7' }
+        : { fontSize: '12.5px', lineHeight: '1.72' };
 
   return (
-    <div className="my-6 rounded-[14px] bg-[#0A0A0A] border border-[var(--line-strong)] overflow-hidden shadow-2xl transition-all duration-150 group">
-      {/* 1. Real Code Editor Window Chrome / Title Bar */}
-      <div className="h-10 px-4 border-b border-[var(--line)] flex items-center justify-between bg-[#111111] select-none">
-        {/* Left: Window Dots & Active Tab */}
-        <div className="flex items-center gap-3 min-w-0">
-          {/* Traffic Window Buttons */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <div className="w-2.5 h-2.5 rounded-full bg-[var(--line-strong)] hover:opacity-80 transition-opacity" />
-            <div className="w-2.5 h-2.5 rounded-full bg-[var(--line-strong)] opacity-60 hover:opacity-80 transition-opacity" />
-            <div className="w-2.5 h-2.5 rounded-full bg-[var(--line-strong)] opacity-40 hover:opacity-80 transition-opacity" />
+    <figure
+      className="nv-edge group/code my-7 overflow-hidden rounded-[16px]"
+      style={{
+        background: 'var(--code-bg)',
+        border: '1px solid transparent',
+        boxShadow: 'var(--shadow-3)',
+      }}
+    >
+      {/* ── Title bar ─────────────────────────────────────────────── */}
+      <div
+        className="flex h-11 items-center justify-between gap-3 px-3"
+        style={{ background: 'var(--code-gutter)', borderBottom: '1px solid var(--line-faint)' }}
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex shrink-0 items-center gap-[6px] pl-1">
+            {[0.28, 0.18, 0.12].map((o, i) => (
+              <span
+                key={i}
+                className="h-[9px] w-[9px] rounded-full transition-transform duration-200 group-hover/code:scale-110"
+                style={{
+                  background: 'var(--glass-4)',
+                  opacity: o + 0.5,
+                  boxShadow: 'inset 0 1px 0 var(--highlight-top)',
+                }}
+              />
+            ))}
           </div>
 
-          {/* Editor File Tab */}
-          <div className="flex items-center gap-2 px-3 py-1 rounded-[6px] bg-[#0A0A0A] border border-[var(--line)] text-[12px] font-mono text-[var(--text)] shrink-0 shadow-xs">
-            <FileCode className="w-3.5 h-3.5 text-[var(--text-3)]" />
-            <span className="font-medium">{displayFilename}</span>
+          <span className="h-4 w-px" style={{ background: 'var(--line)' }} />
+
+          <div className="flex min-w-0 items-center gap-2">
+            <FileCode className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--text-3)' }} />
+            <span
+              className="truncate font-mono text-[11.5px] font-medium tracking-[-0.01em]"
+              style={{ color: 'var(--text)' }}
+            >
+              {filename}
+            </span>
           </div>
 
-          {/* Breadcrumb Path */}
-          <div className="hidden md:flex items-center gap-1 text-[11px] font-mono text-[var(--text-3)] truncate">
-            <ChevronRight className="w-3 h-3 opacity-40 shrink-0" />
-            <span className="truncate">{breadcrumb}</span>
+          <div className="hidden items-center gap-1 md:flex">
+            <ChevronRight className="h-3 w-3 shrink-0" style={{ color: 'var(--text-4)' }} />
+            <span className="truncate font-mono text-[10.5px]" style={{ color: 'var(--text-4)' }}>
+              {path}
+            </span>
           </div>
         </div>
 
-        {/* Right Action Controls */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {/* Word Wrap Toggle */}
+        <div className="flex shrink-0 items-center gap-0.5">
           <button
-            onClick={() => setIsWrap(!isWrap)}
-            className={`p-1.5 rounded-[5px] text-[11px] font-mono transition-colors ${
-              isWrap ? 'bg-[var(--elev-3)] text-[var(--text)]' : 'text-[var(--text-3)] hover:text-[var(--text)] hover:bg-[var(--elev-2)]'
-            }`}
-            title={isWrap ? 'Word wrap active (click to disable)' : 'Enable word wrap'}
+            onClick={() => setIsWrap((w) => !w)}
+            className="nv-iconbtn nv-iconbtn--sm !h-7 !w-7"
+            style={isWrap ? { color: 'var(--text)', background: 'var(--glass-3)' } : undefined}
+            title="Toggle word wrap"
           >
-            <WrapText className="w-3.5 h-3.5" />
+            <WrapText className="h-3.5 w-3.5" />
           </button>
 
-          {/* Font Size Quick Toggle */}
           <button
-            onClick={() => {
-              const next = codeFontSize === 'sm' ? 'base' : codeFontSize === 'base' ? 'lg' : 'sm';
-              setCodeFontSize(next);
-            }}
-            className="px-2 py-1 rounded-[5px] text-[10.5px] font-mono text-[var(--text-3)] hover:text-[var(--text)] hover:bg-[var(--elev-2)] transition-colors"
-            title="Cycle font size (12px / 13px / 15px)"
+            onClick={() =>
+              setCodeFontSize(codeFontSize === 'sm' ? 'base' : codeFontSize === 'base' ? 'lg' : 'sm')
+            }
+            className="nv-btn nv-btn--ghost nv-btn--sm !h-7 !px-2 font-mono !text-[10.5px]"
+            title="Cycle type size"
           >
-            {codeFontSize === 'sm' ? '12px' : codeFontSize === 'base' ? '13px' : '15px'}
+            {codeFontSize === 'sm' ? '12' : codeFontSize === 'base' ? '13' : '14'}px
           </button>
 
-          {/* Language Tag */}
-          <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-[4px] bg-[var(--elev-2)] text-[var(--text-3)] border border-[var(--line)]">
-            {lang}
-          </span>
+          <span className="nv-chip mx-1 !h-[18px] !text-[9px]">{lang}</span>
 
-          {/* Full Artifacts Sheet button */}
           <button
             onClick={handleOpenSheet}
-            className="flex items-center gap-1 px-2 py-1 rounded-[5px] text-[11px] font-mono text-[var(--text-3)] hover:text-[var(--text)] hover:bg-[var(--elev-2)] transition-colors"
-            title="Inspect in full code sheet"
+            className="nv-iconbtn nv-iconbtn--sm !h-7 !w-7"
+            title="Open in artifact sheet"
           >
-            <Maximize2 className="w-3 h-3" />
-            <span className="hidden sm:inline">Sheet</span>
+            <Maximize2 className="h-3.5 w-3.5" />
           </button>
 
-          {/* Copy Button */}
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-[5px] text-[11px] font-mono text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--elev-2)] transition-colors"
-            title="Copy Code to Clipboard"
+            className="nv-btn nv-btn--sm !h-7 !px-2.5 !text-[11px]"
+            title="Copy to clipboard"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-[var(--text)]" /> : <Copy className="w-3.5 h-3.5" />}
-            <span className="font-medium">{copied ? 'Copied' : 'Copy'}</span>
+            {copied ? (
+              <Check className="h-3.5 w-3.5" style={{ color: 'var(--text)' }} />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
+            <span>{copied ? 'Copied' : 'Copy'}</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Editor Gutter & Code Body with Syntax Styling */}
-      <div className="relative flex overflow-x-auto bg-[#050505] text-[var(--text)] font-mono">
-        {/* Line Numbers Gutter */}
+      {/* ── Body ──────────────────────────────────────────────────── */}
+      <div className="flex overflow-x-auto">
         {showLineNumbers && (
           <div
-            className="shrink-0 py-3.5 px-3 text-right select-none font-mono text-[11px] text-[var(--text-3)] border-r border-[var(--line)] bg-[#080808]"
-            aria-hidden="true"
+            aria-hidden
+            className="shrink-0 select-none py-4 pl-4 pr-3 text-right font-mono"
+            style={{
+              background: 'var(--code-gutter)',
+              borderRight: '1px solid var(--line-faint)',
+              fontSize: size.fontSize,
+              lineHeight: size.lineHeight,
+              color: 'var(--text-4)',
+            }}
           >
             {lines.map((_, i) => (
               <div
                 key={i}
-                className={`leading-[1.7] transition-colors ${
-                  activeLine === i ? 'text-[var(--text)] font-bold' : ''
-                }`}
+                className="tabular-nums transition-colors duration-150"
+                style={{ color: activeLine === i ? 'var(--text-2)' : undefined }}
               >
                 {i + 1}
               </div>
@@ -235,38 +227,69 @@ export const CodeEditorBlock: React.FC<CodeEditorBlockProps> = ({ code, language
           </div>
         )}
 
-        {/* Code Lines with Token Syntax Highlighting */}
         <pre
-          className={`p-3.5 flex-1 font-mono ${fontSizeClass} leading-[1.7] select-text overflow-x-auto ${
-            isWrap ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'
-          }`}
+          className="nv-scroll-x flex-1 select-text overflow-x-auto px-4 py-4 font-mono"
+          style={size}
         >
-          {lines.map((lineText, lineIdx) => (
-            <div
-              key={lineIdx}
-              onMouseEnter={() => setActiveLine(lineIdx)}
-              onMouseLeave={() => setActiveLine(null)}
-              className={`hover:bg-[#121212] transition-colors rounded-[2px] px-1 -mx-1`}
-            >
-              {highlightCodeLine(lineText, lang)}
-            </div>
-          ))}
+          <code>
+            {lines.map((lineText, i) => (
+              <div
+                key={i}
+                onMouseEnter={() => setActiveLine(i)}
+                onMouseLeave={() => setActiveLine(null)}
+                className="relative -mx-4 px-4 transition-colors duration-150"
+                style={{
+                  background: activeLine === i ? 'var(--glass-1)' : 'transparent',
+                  whiteSpace: isWrap ? 'pre-wrap' : 'pre',
+                  wordBreak: isWrap ? 'break-word' : 'normal',
+                  color: 'var(--text-2)',
+                }}
+              >
+                {tokenize(lineText).map((t, j) => (
+                  <span
+                    key={j}
+                    className={TOKEN_CLASS[t.k]}
+                    style={
+                      t.k === 'keyword' || t.k === 'type'
+                        ? { color: 'var(--text)' }
+                        : t.k === 'comment'
+                          ? { color: 'var(--text-3)' }
+                          : t.k === 'literal' || t.k === 'number'
+                            ? { color: 'var(--text-1)' }
+                            : undefined
+                    }
+                  >
+                    {escapeHtml(t.v)}
+                  </span>
+                ))}
+              </div>
+            ))}
+          </code>
         </pre>
       </div>
 
-      {/* 3. Editor Status Bar at Bottom */}
-      <div className="h-6 px-4 border-t border-[var(--line)] flex items-center justify-between bg-[#0E0E0E] text-[10px] font-mono text-[var(--text-3)] select-none">
-        <div className="flex items-center gap-3">
-          <span>{lines.length} lines</span>
-          <span>{cleanCode.length} chars</span>
-          {activeLine !== null && <span>Ln {activeLine + 1}</span>}
+      {/* ── Status bar ────────────────────────────────────────────── */}
+      <div
+        className="flex h-7 items-center justify-between px-4 font-mono text-[10px]"
+        style={{
+          background: 'var(--code-gutter)',
+          borderTop: '1px solid var(--line-faint)',
+          color: 'var(--text-4)',
+        }}
+      >
+        <div className="flex items-center gap-4">
+          <span className="nv-num">{lines.length} lines</span>
+          <span className="nv-num">{cleanCode.length} chars</span>
+          {activeLine !== null && <span className="nv-num">Ln {activeLine + 1}</span>}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <span>UTF-8</span>
-          <span>Spaces: 2</span>
-          <span className="uppercase">{lang}</span>
+          <span>LF</span>
+          <span className="uppercase" style={{ color: 'var(--text-3)' }}>
+            {lang}
+          </span>
         </div>
       </div>
-    </div>
+    </figure>
   );
 };

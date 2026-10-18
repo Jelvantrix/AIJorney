@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ToolDefinition } from './types.ts';
+import { ToolDefinition, ToolSideEffect } from './types.ts';
 import { config } from '../config.ts';
 import vm from 'node:vm';
 
@@ -20,6 +20,7 @@ export interface CodeExecResult {
 export class CodeExecTool implements ToolDefinition<CodeExecParams, CodeExecResult> {
   public readonly name = 'code_exec';
   public readonly description = 'Execute algorithmic code in a sandboxed runtime with strict CPU, memory, and timeout bounds.';
+  public readonly sideEffect: ToolSideEffect = 'write_internal';
   public readonly schema = CodeExecParamsSchema;
 
   public async execute(params: CodeExecParams): Promise<CodeExecResult> {

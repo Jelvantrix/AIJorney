@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ToolDefinition } from './types.ts';
+import { ToolDefinition, ToolSideEffect } from './types.ts';
 
 export const WebSearchParamsSchema = z.object({
   query: z.string().min(1).max(200),
@@ -17,6 +17,7 @@ export interface SearchResultItem {
 export class WebSearchTool implements ToolDefinition<WebSearchParams, SearchResultItem[]> {
   public readonly name = 'search';
   public readonly description = 'Search the web for up-to-date facts, empirical sources, and technical specifications.';
+  public readonly sideEffect: ToolSideEffect = 'read';
   public readonly schema = WebSearchParamsSchema;
 
   public async execute(params: WebSearchParams): Promise<SearchResultItem[]> {

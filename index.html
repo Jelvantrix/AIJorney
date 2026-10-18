@@ -9,18 +9,24 @@
     <meta property="og:description" content="Unified ultra-fast AI intelligence powered by an adaptive routing architecture and role-specialist synthesis behind a single voice." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23000'/%3E%3Crect x='0.75' y='0.75' width='62.5' height='62.5' rx='13.25' fill='none' stroke='%23fff' stroke-opacity='0.18'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' fill='%23fff' text-anchor='middle'%3EN%3C/text%3E%3C/svg%3E"
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Geist:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
     <script>
       (function() {
         try {
-          var saved = localStorage.getItem('noevix-theme') || 'system';
+          var saved = localStorage.getItem('noevix-theme') || 'dark';
           var isDark = saved === 'dark' || (saved === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
           if (isDark) {
             document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
           } else {
             document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
           }
         } catch (e) {}
       })();

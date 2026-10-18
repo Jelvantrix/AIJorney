@@ -1,364 +1,283 @@
-import React, { useState, useEffect } from 'react';
-import { useChatStore, LensType } from '../../lib/store.ts';
+import React, { useEffect, useState } from 'react';
+import { useChatStore, type LensType } from '../../lib/store.ts';
 import {
   ArrowRight,
   Check,
   Sparkles,
-  Code,
+  Code2,
   Layout,
   BookOpen,
-  Brain,
-  Terminal,
+  Sigma,
+  PenLine,
   List,
   AlignLeft,
-  Sliders,
-  ChevronRight,
-  MessageSquare,
+  Table2,
   Command,
+  MessageSquare,
+  FileCode2,
+  type LucideIcon,
 } from 'lucide-react';
 
-const LENSES_INFO = [
-  {
-    id: 'engineering',
-    label: 'Engineering',
-    icon: Code,
-    desc: 'Zero-allocation algorithms & high-concurrency systems in Rust and TypeScript',
-    example: 'FastRingBuffer<T> { push(item: T): boolean ... }',
-  },
-  {
-    id: 'reasoning',
-    label: 'Reasoning',
-    icon: Brain,
-    desc: 'Formal invariant proofs, trade-off matrices, and mathematical verification',
-    example: 'Theorem: A causally precedes B iff V_A[k] ≤ V_B[k] ∀k',
-  },
-  {
-    id: 'research',
-    label: 'Research',
-    icon: BookOpen,
-    desc: 'Empirical benchmark evaluations & causal literature synthesis',
-    example: 'Synthesis: Raft vs Egalitarian Paxos under network skew',
-  },
-  {
-    id: 'design',
-    label: 'Design',
-    icon: Layout,
-    desc: 'Monochrome token architectures, typography ratios, and spatial hierarchy',
-    example: 'Scale: --bg: #000000, --elev-1: #0A0A0A, --radius-md: 16px',
-  },
-  {
-    id: 'writing',
-    label: 'Writing',
-    icon: Terminal,
-    desc: 'High-density executive memos, technical RFCs, and decision records',
-    example: 'RFC: Modular monolith consolidation (p99 latency <50ms)',
-  },
+const DISCIPLINES: Array<{ id: LensType; label: string; desc: string; icon: LucideIcon; sample: string }> = [
+  { id: 'engineering', label: 'Engineering', icon: Code2, desc: 'Zero-allocation algorithms, concurrency, Rust & TypeScript', sample: 'RingBuffer<T>::push(&self, item: T) -> Result<(), T>' },
+  { id: 'reasoning', label: 'Reasoning', icon: Sigma, desc: 'Invariant proofs, trade-off matrices, formal verification', sample: 'A → B  ⟺  ∀k. V_A[k] ≤ V_B[k] ∧ ∃j. V_A[j] < V_B[j]' },
+  { id: 'research', label: 'Research', icon: BookOpen, desc: 'Empirical benchmarks and causal literature synthesis', sample: 'Raft vs EPaxos under asymmetric network skew' },
+  { id: 'design', label: 'Design', icon: Layout, desc: 'Token architectures, typographic ratios, spatial hierarchy', sample: '--bg: #000000 · --elev-1: #070707 · --radius-lg: 16px' },
+  { id: 'writing', label: 'Writing', icon: PenLine, desc: 'Executive memos, RFCs, decision records', sample: 'RFC-014: modular monolith consolidation (p99 < 50ms)' },
 ];
 
+const TOTAL = 4;
+
 export const OnboardingModal: React.FC = () => {
-  const {
-    hasCompletedOnboarding,
-    completeOnboarding,
-    outputStyle,
-    setOutputStyle,
-    setSelectedLens,
-  } = useChatStore();
+  const { hasCompletedOnboarding, completeOnboarding, outputStyle, setOutputStyle, setSelectedLens } =
+    useChatStore();
 
   const [step, setStep] = useState(1);
-  const [selectedLensDemo, setSelectedLensDemo] = useState('engineering');
-  const [typingText, setTypingText] = useState('');
+  const [demo, setDemo] = useState<LensType>('engineering');
+  const [typed, setTyped] = useState('');
 
-  // Typing effect on Step 1
   useEffect(() => {
-    if (step === 1) {
-      const fullText = "One intelligence. Every discipline. No distractions.";
-      let idx = 0;
-      setTypingText('');
-      const interval = setInterval(() => {
-        if (idx < fullText.length) {
-          setTypingText(fullText.slice(0, idx + 1));
-          idx++;
-        } else {
-          clearInterval(interval);
-        }
-      }, 30);
-      return () => clearInterval(interval);
-    }
+    if (step !== 1) return;
+    const full = 'One intelligence. Every discipline. No noise.';
+    let i = 0;
+    setTyped('');
+    const t = setInterval(() => {
+      i += 1;
+      setTyped(full.slice(0, i));
+      if (i >= full.length) clearInterval(t);
+    }, 34);
+    return () => clearInterval(t);
   }, [step]);
 
   if (hasCompletedOnboarding) return null;
 
-  const totalSteps = 4;
-
-  const handleNext = () => {
-    if (step < totalSteps) {
-      setStep(step + 1);
-    } else {
-      completeOnboarding();
-    }
-  };
-
-  const activeLensItem = LENSES_INFO.find((l) => l.id === selectedLensDemo) || LENSES_INFO[0];
+  const next = () => (step < TOTAL ? setStep(step + 1) : completeOnboarding());
+  const active = DISCIPLINES.find((d) => d.id === demo) || DISCIPLINES[0];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-2xl select-none animate-[wordReveal_200ms_ease-out]">
-      <div className="relative w-full max-w-2xl rounded-[24px] bg-[#0A0A0A] border border-[var(--line-strong)] shadow-2xl overflow-hidden flex flex-col justify-between min-h-[540px]">
-        {/* Top Progress Bar */}
-        <div className="p-5 px-6 border-b border-[var(--line)] bg-[#0E0E0E] flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+      <div className="nv-scrim" />
+
+      <div className="nv-modal flex min-h-[560px] w-full max-w-[720px] flex-col">
+        {/* Header */}
+        <div
+          className="flex items-center justify-between px-6 py-4"
+          style={{ borderBottom: '1px solid var(--line)' }}
+        >
           <div className="flex items-center gap-3">
-            <span className="font-serif-display text-2xl text-[var(--text)] tracking-tight">
-              Noevix
-            </span>
-            <span className="font-mono text-[10px] uppercase px-2 py-0.5 rounded-[4px] bg-[#161616] text-[var(--text-3)] border border-[var(--line)]">
-              ONBOARDING {step} OF {totalSteps}
+            <span className="nv-display text-[20px] leading-none">Noevix</span>
+            <span className="nv-badge">
+              {String(step).padStart(2, '0')} / {String(TOTAL).padStart(2, '0')}
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            {[1, 2, 3, 4].map((s) => (
+          <div className="flex items-center gap-1.5">
+            {Array.from({ length: TOTAL }, (_, i) => i + 1).map((s) => (
               <button
                 key={s}
                 onClick={() => setStep(s)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  s === step
-                    ? 'w-7 bg-[var(--text)]'
-                    : s < step
-                    ? 'w-3.5 bg-[var(--text-3)]'
-                    : 'w-2 bg-[var(--line-strong)]'
-                }`}
-                title={`Go to step ${s}`}
+                aria-label={`Step ${s}`}
+                className="h-[3px] rounded-full transition-all duration-300"
+                style={{
+                  width: s === step ? 26 : s < step ? 12 : 8,
+                  background: s === step ? 'var(--text)' : s < step ? 'var(--text-3)' : 'var(--line-strong)',
+                }}
               />
             ))}
           </div>
         </div>
 
-        {/* Step Content */}
-        <div className="p-8 sm:p-10 flex-1 flex flex-col justify-center">
-          {/* STEP 1: Introduction */}
+        {/* Body */}
+        <div className="flex flex-1 flex-col justify-center px-6 py-8 sm:px-9 sm:py-10">
           {step === 1 && (
-            <div className="space-y-6 animate-[wordReveal_250ms_ease-out]">
-              <span className="font-mono text-[11px] uppercase tracking-wider text-[var(--text-3)] block">
-                01 / PHILOSOPHY
-              </span>
-
-              <h2 className="font-serif-display text-4xl sm:text-5xl text-[var(--text)] font-normal leading-[1.06]">
-                Light in a dark room.
+            <div className="anim-rise">
+              <span className="nv-label">Philosophy</span>
+              <h2 className="nv-display mt-3 text-[clamp(34px,5vw,46px)] leading-[1.03]">
+                Light in a<br />
+                <em style={{ fontStyle: 'italic', color: 'var(--text-2)' }}>dark room.</em>
               </h2>
-
-              <div className="p-4 rounded-[12px] bg-[#111111] border border-[var(--line)] font-mono text-[14px] text-[var(--text)] min-h-[54px] flex items-center">
-                <span>{typingText}</span>
-                <span className="inline-block w-2 h-4 bg-[var(--text)] ml-1 animate-pulse" />
+              <div
+                className="mt-7 flex min-h-[52px] items-center rounded-[12px] px-4 font-mono text-[13.5px]"
+                style={{ background: 'var(--glass-1)', border: '1px solid var(--line)', color: 'var(--text)' }}
+              >
+                <span>{typed}</span>
+                <span className="nv-caret" />
               </div>
-
-              <p className="text-[15px] text-[var(--text-2)] leading-relaxed max-w-xl">
-                Noevix eliminates decorative color and distracting chat bubbles completely. Pure obsidian dark mode
-                concentrates 100% of your cognitive bandwidth on systems engineering, rigorous proofs, and synthesis.
+              <p className="mt-6 max-w-[52ch] text-[14px] leading-relaxed" style={{ color: 'var(--text-2)' }}>
+                Noevix removes decorative colour and chat bubbles entirely. A single monochrome canvas
+                keeps every unit of attention on the work itself.
               </p>
             </div>
           )}
 
-          {/* STEP 2: Response Preference (Lists vs Paragraphs vs Code) */}
           {step === 2 && (
-            <div className="space-y-6 animate-[wordReveal_250ms_ease-out]">
-              <div>
-                <span className="font-mono text-[11px] uppercase tracking-wider text-[var(--text-3)] block">
-                  02 / STRUCTURE PREFERENCE
-                </span>
-                <h2 className="font-serif-display text-3xl sm:text-4xl text-[var(--text)] font-normal mt-1">
-                  How do you prefer answers?
-                </h2>
-                <p className="text-[13.5px] text-[var(--text-2)] mt-1.5">
-                  Choose your default synthesis format. You can switch this at any moment in the composer or Settings.
-                </p>
-              </div>
+            <div className="anim-rise">
+              <span className="nv-label">Answer shape</span>
+              <h2 className="nv-display mt-3 text-[clamp(30px,4vw,40px)] leading-[1.06]">
+                How should answers arrive?
+              </h2>
+              <p className="mt-2.5 text-[13.5px]" style={{ color: 'var(--text-2)' }}>
+                Switch at any time from the composer or preferences.
+              </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button
-                  onClick={() => setOutputStyle('lists')}
-                  className={`p-5 rounded-[16px] border text-left transition-all flex flex-col justify-between min-h-[140px] ${
-                    outputStyle === 'lists'
-                      ? 'bg-[#141414] border-[var(--text)] text-[var(--text)] shadow-sm'
-                      : 'bg-[#0E0E0E] border-[var(--line)] text-[var(--text-2)] hover:border-[var(--line-strong)]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <List className="w-5 h-5 text-[var(--text)]" />
-                    {outputStyle === 'lists' && (
-                      <span className="font-mono text-[10px] px-2 py-0.5 rounded-[4px] bg-[var(--text)] text-[var(--bg)] font-bold">
-                        ACTIVE
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-base font-medium text-[var(--text)]">Lists & Outlines</h3>
-                    <p className="text-[12px] text-[var(--text-3)] mt-1 leading-snug">
-                      High-density bullet points, numbered invariants, and rapid scanning.
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => setOutputStyle('paragraphs')}
-                  className={`p-5 rounded-[16px] border text-left transition-all flex flex-col justify-between min-h-[140px] ${
-                    outputStyle === 'paragraphs'
-                      ? 'bg-[#141414] border-[var(--text)] text-[var(--text)] shadow-sm'
-                      : 'bg-[#0E0E0E] border-[var(--line)] text-[var(--text-2)] hover:border-[var(--line-strong)]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <AlignLeft className="w-5 h-5 text-[var(--text)]" />
-                    {outputStyle === 'paragraphs' && (
-                      <span className="font-mono text-[10px] px-2 py-0.5 rounded-[4px] bg-[var(--text)] text-[var(--bg)] font-bold">
-                        ACTIVE
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-base font-medium text-[var(--text)]">Paragraphs & Prose</h3>
-                    <p className="text-[12px] text-[var(--text-3)] mt-1 leading-snug">
-                      Editorial narrative, thorough explanations, and comprehensive context.
-                    </p>
-                  </div>
-                </button>
+              <div className="mt-7 grid gap-2.5 sm:grid-cols-2">
+                {[
+                  { id: 'lists', label: 'Lists & outlines', desc: 'Dense bullets, numbered invariants, fast scanning', icon: List },
+                  { id: 'paragraphs', label: 'Prose', desc: 'Editorial narrative with full context', icon: AlignLeft },
+                  { id: 'code_first', label: 'Code first', desc: 'Executable answers lead the reply', icon: Code2 },
+                  { id: 'tables', label: 'Comparison', desc: 'Trade-off matrices and option tables', icon: Table2 },
+                ].map((o) => {
+                  const Icon = o.icon;
+                  const on = outputStyle === o.id;
+                  return (
+                    <button
+                      key={o.id}
+                      onClick={() => setOutputStyle(o.id as any)}
+                      className="flex flex-col items-start gap-2.5 rounded-[14px] p-4 text-left transition-all duration-200"
+                      style={{
+                        background: on ? 'var(--glass-3)' : 'var(--glass-1)',
+                        border: `1px solid ${on ? 'var(--line-bright)' : 'var(--line-faint)'}`,
+                        boxShadow: on ? 'var(--shadow-2), var(--shadow-inset)' : 'none',
+                      }}
+                    >
+                      <div className="flex w-full items-center justify-between">
+                        <Icon className="h-4 w-4" style={{ color: on ? 'var(--text)' : 'var(--text-3)' }} />
+                        {on && <Check className="h-3.5 w-3.5" style={{ color: 'var(--text)' }} />}
+                      </div>
+                      <div>
+                        <div className="text-[13.5px] font-medium" style={{ color: 'var(--text)' }}>
+                          {o.label}
+                        </div>
+                        <div className="mt-0.5 text-[11.5px] leading-snug" style={{ color: 'var(--text-4)' }}>
+                          {o.desc}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {/* STEP 3: Five Specialized Disciplines */}
           {step === 3 && (
-            <div className="space-y-5 animate-[wordReveal_250ms_ease-out]">
-              <div>
-                <span className="font-mono text-[11px] uppercase tracking-wider text-[var(--text-3)] block">
-                  03 / ADAPTIVE ROUTING
-                </span>
-                <h2 className="font-serif-display text-3xl sm:text-4xl text-[var(--text)] font-normal mt-1">
-                  Five disciplines. One calm voice.
-                </h2>
-                <p className="text-[13.5px] text-[var(--text-2)] mt-1">
-                  A high-speed non-conversational router evaluates your prompt and executes with domain precision.
-                </p>
-              </div>
+            <div className="anim-rise">
+              <span className="nv-label">Adaptive routing</span>
+              <h2 className="nv-display mt-3 text-[clamp(30px,4vw,40px)] leading-[1.06]">
+                Five disciplines. One voice.
+              </h2>
+              <p className="mt-2.5 text-[13.5px]" style={{ color: 'var(--text-2)' }}>
+                A prompt router evaluates intent, then executes with domain precision.
+              </p>
 
-              <div className="space-y-1.5">
-                {LENSES_INFO.map((lens) => {
-                  const Icon = lens.icon;
-                  const isSelected = selectedLensDemo === lens.id;
+              <div className="mt-6 space-y-1.5">
+                {DISCIPLINES.map((d) => {
+                  const Icon = d.icon;
+                  const on = demo === d.id;
                   return (
                     <button
-                      key={lens.id}
+                      key={d.id}
                       onClick={() => {
-                        setSelectedLensDemo(lens.id);
-                        setSelectedLens(lens.id as LensType);
+                        setDemo(d.id);
+                        setSelectedLens(d.id);
                       }}
-                      className={`w-full p-2.5 px-3 rounded-[10px] border flex items-center justify-between transition-all text-left ${
-                        isSelected
-                          ? 'bg-[#161616] border-[var(--text)] text-[var(--text)]'
-                          : 'bg-[#0E0E0E] border-[var(--line)] text-[var(--text-2)] hover:bg-[#121212]'
-                      }`}
+                      className="flex w-full items-center gap-3 rounded-[11px] px-3 py-2.5 text-left transition-all duration-200"
+                      style={{
+                        background: on ? 'var(--glass-3)' : 'transparent',
+                        border: `1px solid ${on ? 'var(--line)' : 'transparent'}`,
+                      }}
                     >
-                      <div className="flex items-center gap-3">
-                        <Icon className="w-4 h-4 text-[var(--text)] shrink-0" />
-                        <div>
-                          <span className="font-mono text-[12px] font-semibold uppercase">{lens.label}</span>
-                          <span className="text-[11px] text-[var(--text-3)] ml-2 hidden sm:inline">{lens.desc}</span>
-                        </div>
-                      </div>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-[var(--text)]" />}
+                      <span
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px]"
+                        style={{ background: 'var(--glass-2)', border: '1px solid var(--line-faint)' }}
+                      >
+                        <Icon className="h-3.5 w-3.5" style={{ color: on ? 'var(--text)' : 'var(--text-3)' }} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="text-[13px] font-medium" style={{ color: 'var(--text)' }}>
+                          {d.label}
+                        </span>
+                        <span className="mt-0.5 block truncate text-[11.5px]" style={{ color: 'var(--text-4)' }}>
+                          {d.desc}
+                        </span>
+                      </span>
+                      {on && <Check className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--text)' }} />}
                     </button>
                   );
                 })}
               </div>
 
-              {/* Sample Output Preview Box */}
-              <div className="p-3 rounded-[8px] bg-[#070707] border border-[var(--line)] font-mono text-[11px] text-[var(--text-2)]">
-                <span className="text-[var(--text-3)] uppercase block mb-1">Preview Protocol Signature:</span>
-                <code>{activeLensItem.example}</code>
+              <div
+                className="mt-5 overflow-hidden rounded-[11px] px-3.5 py-3"
+                style={{ background: 'var(--code-bg)', border: '1px solid var(--line-faint)' }}
+              >
+                <div className="nv-label mb-1.5 !text-[9px]">Protocol signature</div>
+                <code className="font-mono text-[12px]" style={{ color: 'var(--text-1)' }}>
+                  {active.sample}
+                </code>
               </div>
             </div>
           )}
 
-          {/* STEP 4: Features & Ready to Begin */}
           {step === 4 && (
-            <div className="space-y-5 animate-[wordReveal_250ms_ease-out]">
-              <div>
-                <span className="font-mono text-[11px] uppercase tracking-wider text-[var(--text-3)] block">
-                  04 / INSTRUMENT READY
-                </span>
-                <h2 className="font-serif-display text-4xl sm:text-5xl text-[var(--text)] font-normal mt-1">
-                  You are ready to build.
-                </h2>
-                <p className="text-[14px] text-[var(--text-2)] mt-1.5">
-                  Essential tools and keyboard shortcuts at your fingertips:
-                </p>
-              </div>
+            <div className="anim-rise">
+              <span className="nv-label">Instrument</span>
+              <h2 className="nv-display mt-3 text-[clamp(32px,4.5vw,44px)] leading-[1.04]">
+                Everything is within reach.
+              </h2>
 
-              <div className="grid grid-cols-2 gap-3 text-[12px] font-mono text-[var(--text-2)]">
-                <div className="p-3 rounded-[12px] bg-[#0E0E0E] border border-[var(--line)]">
-                  <span className="text-[var(--text)] font-semibold block mb-0.5 flex items-center gap-1.5">
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    <span>New Chat & Chats Menu</span>
-                  </span>
-                  <p className="text-[11px] text-[var(--text-3)]">
-                    Use the Top Bar "+ New Chat" and "Chats" menu to create and switch conversations.
-                  </p>
-                </div>
-                <div className="p-3 rounded-[12px] bg-[#0E0E0E] border border-[var(--line)]">
-                  <span className="text-[var(--text)] font-semibold block mb-0.5 flex items-center gap-1.5">
-                    <Code className="w-3.5 h-3.5" />
-                    <span>Code Editor Blocks</span>
-                  </span>
-                  <p className="text-[11px] text-[var(--text-3)]">
-                    Code displays in real editor windows with line numbers, syntax weights, and full sheets.
-                  </p>
-                </div>
-                <div className="p-3 rounded-[12px] bg-[#0E0E0E] border border-[var(--line)]">
-                  <span className="text-[var(--text)] font-semibold block mb-0.5 flex items-center gap-1.5">
-                    <Sliders className="w-3.5 h-3.5" />
-                    <span>Settings & Formatting</span>
-                  </span>
-                  <p className="text-[11px] text-[var(--text-3)]">
-                    Toggle Lists vs Paragraphs, font size, and detail level anytime in Settings.
-                  </p>
-                </div>
-                <div className="p-3 rounded-[12px] bg-[#0E0E0E] border border-[var(--line)]">
-                  <span className="text-[var(--text)] font-semibold block mb-0.5 flex items-center gap-1.5">
-                    <Command className="w-3.5 h-3.5" />
-                    <span>Index & Lens Keys</span>
-                  </span>
-                  <p className="text-[11px] text-[var(--text-3)]">
-                    Press ⌘K to open the spaces index; press ⌘/ to toggle specialist lens overrides.
-                  </p>
-                </div>
+              <div className="mt-7 grid gap-2.5 sm:grid-cols-2">
+                {[
+                  { icon: MessageSquare, title: 'Spaces', body: 'Create, switch, rename and export threads from the left rail.' },
+                  { icon: FileCode2, title: 'Code surfaces', body: 'Replies render in real editor windows with a full artifact sheet.' },
+                  { icon: Sparkles, title: 'Discipline lens', body: 'Override routing per message from the composer pill.' },
+                  { icon: Command, title: 'Keyboard', body: '⌘K for the index, ⌘/ for the lens, J and K to move between turns.' },
+                ].map((f) => {
+                  const Icon = f.icon;
+                  return (
+                    <div
+                      key={f.title}
+                      className="rounded-[13px] p-3.5"
+                      style={{ background: 'var(--glass-1)', border: '1px solid var(--line-faint)' }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-3.5 w-3.5" style={{ color: 'var(--text-2)' }} />
+                        <span className="text-[12.5px] font-medium" style={{ color: 'var(--text)' }}>
+                          {f.title}
+                        </span>
+                      </div>
+                      <p className="mt-1.5 text-[11.5px] leading-relaxed" style={{ color: 'var(--text-4)' }}>
+                        {f.body}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
         </div>
 
-        {/* Footer Navigation */}
-        <div className="p-5 px-6 border-t border-[var(--line)] bg-[#0E0E0E] flex items-center justify-between">
+        {/* Footer */}
+        <div
+          className="flex items-center justify-between px-6 py-4"
+          style={{ borderTop: '1px solid var(--line)', background: 'var(--glass-1)' }}
+        >
           <button
             onClick={completeOnboarding}
-            className="text-[12px] font-mono text-[var(--text-3)] hover:text-[var(--text)] transition-colors"
+            className="font-mono text-[11px] uppercase tracking-[0.1em] transition-colors hover:text-[var(--text)]"
+            style={{ color: 'var(--text-4)' }}
           >
-            Skip to Workspace
+            Skip
           </button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {step > 1 && (
-              <button
-                onClick={() => setStep(step - 1)}
-                className="px-4 py-2 rounded-[9999px] border border-[var(--line)] text-[12px] font-mono text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[#151515]"
-              >
+              <button onClick={() => setStep(step - 1)} className="nv-btn">
                 Back
               </button>
             )}
-
-            <button
-              onClick={handleNext}
-              className="px-6 py-2.5 rounded-[9999px] bg-[var(--text)] text-[var(--bg)] text-[13px] font-semibold hover:opacity-90 transition-opacity flex items-center gap-2 shadow-sm"
-            >
-              <span>{step === totalSteps ? 'Launch Workspace' : 'Continue'}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+            <button onClick={next} className="nv-btn nv-btn--primary">
+              {step === TOTAL ? 'Enter workspace' : 'Continue'}
+              <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>

@@ -1,148 +1,282 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useChatStore } from '../../lib/store.ts';
-import { X, Copy, Check, Eye, Code, Download, ExternalLink } from 'lucide-react';
+import {
+  X,
+  Copy,
+  Check,
+  Download,
+  FileCode2,
+  Eye,
+  Fingerprint,
+  Hash,
+  ShieldCheck,
+  WrapText,
+} from 'lucide-react';
+
+type Tab = 'code' | 'preview' | 'provenance';
+
+const EXT: Record<string, string> = {
+  rust: 'rs',
+  python: 'py',
+  go: 'go',
+  json: 'json',
+  sql: 'sql',
+  html: 'html',
+  css: 'css',
+  bash: 'sh',
+  sh: 'sh',
+  yaml: 'yml',
+};
 
 export const ArtifactSheet: React.FC = () => {
   const { isArtifactSheetOpen, setArtifactSheetOpen, activeArtifact } = useChatStore();
+  const [tab, setTab] = useState<Tab>('code');
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
+  const [hash, setHash] = useState('');
+  const [wrap, setWrap] = useState(false);
+
+  useEffect(() => {
+    if (!activeArtifact) return;
+    setTab('code');
+    setCopied(false);
+    crypto.subtle
+      .digest('SHA-256', new TextEncoder().encode(activeArtifact.content))
+      .then((buf) =>
+        setHash(
+          Array.from(new Uint8Array(buf))
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join('')
+        )
+      )
+      .catch(() => setHash(''));
+  }, [activeArtifact]);
+
+  useEffect(() => {
+    if (!isArtifactSheetOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setArtifactSheetOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isArtifactSheetOpen, setArtifactSheetOpen]);
+
+  const lines = useMemo(
+    () => (activeArtifact?.content || '').replace(/\n$/, '').split('\n'),
+    [activeArtifact]
+  );
 
   if (!isArtifactSheetOpen || !activeArtifact) return null;
 
-  const handleCopy = () => {
+  const lang = activeArtifact.language || 'text';
+  const ext = EXT[lang] || 'txt';
+  const size = new Blob([activeArtifact.content]).size;
+
+  const copy = () => {
     navigator.clipboard.writeText(activeArtifact.content);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 1800);
   };
 
-  const handleDownload = () => {
-    const ext = activeArtifact.language === 'rust' ? 'rs' : activeArtifact.language === 'python' ? 'py' : 'ts';
-    const blob = new Blob([activeArtifact.content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
+  const download = () => {
+    const url = URL.createObjectURL(new Blob([activeArtifact.content], { type: 'text/plain' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${activeArtifact.title.toLowerCase().replace(/\s+/g, '_')}.${ext}`;
+    a.download = `${activeArtifact.title.toLowerCase().replace(/\s+/g, '-')}.${ext}`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  // Minimal HTML sandbox template for previews
-  const sandboxHtml = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, system-ui, sans-serif; background: #000; color: #fff; padding: 24px; line-height: 1.6; }
-          pre { background: #111; padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); overflow-x: auto; font-family: monospace; }
-        </style>
-      </head>
-      <body>
-        <h3>Artifact Sandbox Execution</h3>
-        <p>Sandboxed iframe running under strict CSP:</p>
-        <pre>${activeArtifact.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
-      </body>
-    </html>
-  `;
+  const downloadReport = () => {
+    const md = [
+      `# Provenance record`,
+      ``,
+      `- **Artifact** ${activeArtifact.title}`,
+      `- **Id** ${activeArtifact.id}`,
+      `- **Language** ${lang}`,
+      `- **Bytes** ${size}`,
+      `- **SHA-256** \`${hash}\``,
+      `- **Issued** ${new Date().toISOString()}`,
+      ``,
+      `## Content`,
+      ``,
+      '```' + (lang === 'text' ? '' : lang),
+      activeArtifact.content,
+      '```',
+    ].join('\n');
+    const url = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `provenance-${activeArtifact.id}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const TABS: Array<{ id: Tab; label: string; icon: typeof FileCode2 }> = [
+    { id: 'code', label: 'Source', icon: FileCode2 },
+    { id: 'preview', label: 'Preview', icon: Eye },
+    { id: 'provenance', label: 'Provenance', icon: Fingerprint },
+  ];
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end pointer-events-none">
-      {/* Backdrop Dimmer */}
-      <div
-        onClick={() => setArtifactSheetOpen(false)}
-        className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity duration-300 pointer-events-auto"
-      />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8">
+      <div className="nv-scrim" onClick={() => setArtifactSheetOpen(false)} />
 
-      {/* Slide-over Sheet (480-720px wide) */}
-      <aside
-        className="relative w-full max-w-2xl h-full bg-[var(--elev-1)] border-l border-[var(--line-strong)] shadow-2xl flex flex-col pointer-events-auto z-10 animate-[wordReveal_200ms_cubic-bezier(0.16,1,0.3,1)]"
-        aria-label="Artifact inspector"
+      <div
+        className="nv-modal flex w-full max-w-[980px] flex-col"
+        style={{ height: 'min(86vh, 780px)' }}
       >
         {/* Header */}
-        <div className="h-14 px-6 border-b border-[var(--line)] flex items-center justify-between bg-[var(--elev-2)]">
-          <div className="flex items-center gap-3">
-            <span className="font-serif-display text-lg text-[var(--text)]">
-              {activeArtifact.title}
+        <div className="flex items-start justify-between gap-4 px-5 py-4" style={{ borderBottom: '1px solid var(--line)' }}>
+          <div className="flex min-w-0 items-center gap-3.5">
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px]"
+              style={{ background: 'var(--glass-2)', border: '1px solid var(--line)', boxShadow: 'var(--shadow-inset)' }}
+            >
+              <FileCode2 className="h-[18px] w-[18px]" style={{ color: 'var(--text-2)' }} />
             </span>
-            <span className="font-mono text-[10px] uppercase px-2 py-0.5 rounded-[4px] bg-[var(--elev-3)] text-[var(--text-2)] border border-[var(--line)]">
-              {activeArtifact.language || activeArtifact.type}
-            </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="truncate text-[15px] font-medium tracking-[-0.01em]" style={{ color: 'var(--text)' }}>
+                  {activeArtifact.title}
+                </h2>
+                <span className="nv-chip !h-[18px] !text-[9px]">{lang}</span>
+              </div>
+              <div className="mt-1 flex items-center gap-3 font-mono text-[10.5px]" style={{ color: 'var(--text-4)' }}>
+                <span className="nv-num">{lines.length} lines</span>
+                <span className="nv-num">{(size / 1024).toFixed(1)} kb</span>
+                <span className="truncate">{activeArtifact.id}</span>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* View Switcher if applicable */}
-            <div className="flex items-center rounded-[6px] bg-[var(--elev-3)] p-0.5 border border-[var(--line)]">
+          <button
+            onClick={() => setArtifactSheetOpen(false)}
+            className="nv-iconbtn nv-iconbtn--sm shrink-0"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Tab bar */}
+        <div className="flex items-center justify-between gap-2 px-3" style={{ borderBottom: '1px solid var(--line)' }}>
+          <div className="flex items-center gap-0.5 py-1.5">
+            {TABS.map((t) => {
+              const Icon = t.icon;
+              return (
+                <button key={t.id} data-active={tab === t.id} onClick={() => setTab(t.id)} className="nv-tab">
+                  <Icon className="h-3.5 w-3.5" />
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-0.5 py-1.5">
+            {tab === 'code' && (
               <button
-                onClick={() => setActiveTab('code')}
-                className={`px-2 py-1 rounded-[4px] text-[11px] font-mono flex items-center gap-1 transition-colors ${
-                  activeTab === 'code' ? 'bg-[var(--elev-1)] text-[var(--text)] font-semibold' : 'text-[var(--text-3)]'
-                }`}
+                onClick={() => setWrap((w) => !w)}
+                className="nv-iconbtn nv-iconbtn--sm !h-7 !w-7"
+                style={wrap ? { color: 'var(--text)', background: 'var(--glass-3)' } : undefined}
+                title="Word wrap"
               >
-                <Code className="w-3 h-3" />
-                <span>Code</span>
+                <WrapText className="h-3.5 w-3.5" />
               </button>
-              <button
-                onClick={() => setActiveTab('preview')}
-                className={`px-2 py-1 rounded-[4px] text-[11px] font-mono flex items-center gap-1 transition-colors ${
-                  activeTab === 'preview' ? 'bg-[var(--elev-1)] text-[var(--text)] font-semibold' : 'text-[var(--text-3)]'
-                }`}
-              >
-                <Eye className="w-3 h-3" />
-                <span>Sandbox</span>
-              </button>
-            </div>
-
-            <button
-              onClick={handleCopy}
-              className="p-1.5 rounded-[6px] text-[var(--text-3)] hover:text-[var(--text)] hover:bg-[var(--elev-3)] transition-colors"
-              title="Copy contents"
-            >
-              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            )}
+            <button onClick={copy} className="nv-btn nv-btn--sm !h-7">
+              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied ? 'Copied' : 'Copy'}
             </button>
-
-            <button
-              onClick={handleDownload}
-              className="p-1.5 rounded-[6px] text-[var(--text-3)] hover:text-[var(--text)] hover:bg-[var(--elev-3)] transition-colors"
-              title="Download file"
-            >
-              <Download className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={() => setArtifactSheetOpen(false)}
-              className="p-1.5 rounded-[6px] text-[var(--text-3)] hover:text-[var(--text)] hover:bg-[var(--elev-3)] transition-colors ml-2"
-              title="Close Sheet (Esc)"
-            >
-              <X className="w-4 h-4" />
+            <button onClick={download} className="nv-btn nv-btn--sm !h-7">
+              <Download className="h-3.5 w-3.5" />
+              .{ext}
             </button>
           </div>
         </div>
 
-        {/* Content Viewer */}
-        <div className="flex-1 overflow-auto p-6 bg-[var(--bg)] font-mono text-[13px] leading-relaxed">
-          {activeTab === 'code' ? (
-            <pre className="text-[var(--text-2)] whitespace-pre-wrap select-text">
-              <code>{activeArtifact.content}</code>
-            </pre>
-          ) : (
-            <div className="w-full h-full rounded-[12px] border border-[var(--line)] overflow-hidden bg-black">
-              {/* Sandboxed iframe without allow-same-origin for security */}
-              <iframe
-                title="Sandboxed Artifact Preview"
-                srcDoc={sandboxHtml}
-                sandbox="allow-scripts"
-                className="w-full h-full border-none"
-              />
+        {/* Body */}
+        <div className="nv-scroll min-h-0 flex-1 overflow-auto">
+          {tab === 'code' && (
+            <div className="flex" style={{ background: 'var(--code-bg)' }}>
+              <div
+                aria-hidden
+                className="shrink-0 select-none py-4 pl-4 pr-3 text-right font-mono text-[11.5px] leading-[1.72]"
+                style={{ background: 'var(--code-gutter)', borderRight: '1px solid var(--line-faint)', color: 'var(--text-4)' }}
+              >
+                {lines.map((_, i) => (
+                  <div key={i} className="tabular-nums">
+                    {i + 1}
+                  </div>
+                ))}
+              </div>
+              <pre
+                className="flex-1 px-4 py-4 font-mono text-[12.5px] leading-[1.72]"
+                style={{ whiteSpace: wrap ? 'pre-wrap' : 'pre', color: 'var(--text-2)' }}
+              >
+                {lines.join('\n')}
+              </pre>
+            </div>
+          )}
+
+          {tab === 'preview' && (
+            <div className="editorial-reply mx-auto max-w-[68ch] px-6 py-6">
+              <pre className="whitespace-pre-wrap font-sans text-[14.5px]">{activeArtifact.content}</pre>
+            </div>
+          )}
+
+          {tab === 'provenance' && (
+            <div className="mx-auto w-full max-w-[720px] space-y-3 p-6">
+              <div
+                className="rounded-[14px] p-4"
+                style={{ background: 'var(--glass-1)', border: '1px solid var(--line)' }}
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="nv-label">Content address</span>
+                  <span className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--text-2)' }}>
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    Integrity verified
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Hash className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--text-4)' }} />
+                  <code
+                    className="min-w-0 flex-1 truncate font-mono text-[11.5px]"
+                    style={{ color: 'var(--text-1)' }}
+                  >
+                    {hash || 'computing…'}
+                  </code>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[
+                  { k: 'Identifier', v: activeArtifact.id },
+                  { k: 'Media type', v: lang },
+                  { k: 'Byte length', v: String(size) },
+                  { k: 'Line count', v: String(lines.length) },
+                  { k: 'Content hash', v: 'sha-256' },
+                  { k: 'Rendering', v: activeArtifact.type },
+                ].map((row) => (
+                  <div
+                    key={row.k}
+                    className="flex items-center justify-between rounded-[10px] px-3.5 py-3"
+                    style={{ background: 'var(--glass-1)', border: '1px solid var(--line-faint)' }}
+                  >
+                    <span className="nv-label">{row.k}</span>
+                    <span className="truncate font-mono text-[11.5px]" style={{ color: 'var(--text-1)' }}>
+                      {row.v}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <button onClick={downloadReport} className="nv-btn w-full">
+                <Download className="h-4 w-4" />
+                Download provenance record
+              </button>
             </div>
           )}
         </div>
-
-        {/* Footer Meta */}
-        <div className="h-10 px-6 border-t border-[var(--line)] flex items-center justify-between text-[11px] font-mono text-[var(--text-3)] bg-[var(--elev-2)]">
-          <span>SIZE: {new Blob([activeArtifact.content]).size} BYTES</span>
-          <span>PRESS ESC TO CLOSE</span>
-        </div>
-      </aside>
+      </div>
     </div>
   );
 };

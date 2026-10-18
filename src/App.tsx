@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useChatStore } from './lib/store.ts';
 import { applyTheme, getStoredTheme } from './lib/theme.ts';
 import { Aura } from './components/aura/Aura.tsx';
+import { SideRail } from './components/editorial/SideRail.tsx';
 import { TopBar } from './components/editorial/TopBar.tsx';
 import { Stage } from './components/editorial/Stage.tsx';
 import { Dock } from './components/editorial/Dock.tsx';
@@ -14,6 +15,7 @@ import { SpacesMenu } from './components/editorial/SpacesMenu.tsx';
 import { SettingsModal } from './components/editorial/SettingsModal.tsx';
 import { MarketingPage } from './components/marketing/MarketingPage.tsx';
 import { AuraLab } from './components/lab/AuraLab.tsx';
+import MissionControl from './components/mission/MissionControl.tsx';
 
 export default function App() {
   const {
@@ -42,72 +44,43 @@ export default function App() {
     applyTheme(getStoredTheme());
   }, []);
 
-  // Global Keyboard Shortcuts
   useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is currently typing in an input or textarea
-      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
-      const isInput = targetTag === 'input' || targetTag === 'textarea';
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      const isInput = tag === 'input' || tag === 'textarea';
 
-      // ⌘K or Ctrl+K: Index Overlay
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setIndexOpen(!isIndexOpen);
         return;
       }
 
-      // ⌘/ or Ctrl+/: Lens Menu
       if ((e.metaKey || e.ctrlKey) && e.key === '/') {
         e.preventDefault();
         setLensMenuOpen(!isLensMenuOpen);
         return;
       }
 
-      // Escape key behavior
       if (e.key === 'Escape') {
-        if (isStreaming) {
-          stopStreaming();
-          return;
-        }
-        if (isSpacesMenuOpen) {
-          setSpacesMenuOpen(false);
-          return;
-        }
-        if (isSettingsOpen) {
-          setSettingsOpen(false);
-          return;
-        }
-        if (isIndexOpen) {
-          setIndexOpen(false);
-          return;
-        }
-        if (isArtifactSheetOpen) {
-          setArtifactSheetOpen(false);
-          return;
-        }
-        if (isLensMenuOpen) {
-          setLensMenuOpen(false);
-          return;
-        }
-        if (isAuthModalOpen) {
-          setAuthModalOpen(false);
-          return;
-        }
+        if (isStreaming) return stopStreaming();
+        if (isSpacesMenuOpen) return setSpacesMenuOpen(false);
+        if (isSettingsOpen) return setSettingsOpen(false);
+        if (isIndexOpen) return setIndexOpen(false);
+        if (isArtifactSheetOpen) return setArtifactSheetOpen(false);
+        if (isLensMenuOpen) return setLensMenuOpen(false);
+        if (isAuthModalOpen) return setAuthModalOpen(false);
       }
 
-      // J / K keyboard navigation between exchanges when not focused in input
       if (!isInput && !isIndexOpen && !isArtifactSheetOpen) {
-        const activeMessages = (activeId && messages[activeId]) || [];
-        const userCount = activeMessages.filter((m) => m.role === 'user').length;
+        const convo = (activeId && messages[activeId]) || [];
+        const userCount = convo.filter((m) => m.role === 'user').length;
 
         if (e.key.toLowerCase() === 'j') {
-          // Down / next exchange
           e.preventDefault();
           const next = Math.min(activeExchangeIndex + 1, Math.max(0, userCount - 1));
           setActiveExchangeIndex(next);
           document.getElementById(`exchange-${next}`)?.scrollIntoView({ behavior: 'smooth' });
         } else if (e.key.toLowerCase() === 'k' && !(e.metaKey || e.ctrlKey)) {
-          // Up / prev exchange
           e.preventDefault();
           const prev = Math.max(0, activeExchangeIndex - 1);
           setActiveExchangeIndex(prev);
@@ -116,8 +89,8 @@ export default function App() {
       }
     };
 
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [
     isIndexOpen,
     isSpacesMenuOpen,
@@ -131,52 +104,45 @@ export default function App() {
     messages,
   ]);
 
-  // Route to Marketing Page
-  if (currentView === 'marketing') {
-    return <MarketingPage />;
-  }
+  if (currentView === 'marketing') return <MarketingPage />;
+  if (currentView === 'lab') return <AuraLab />;
+  if (currentView === 'missions') return <MissionControl />;
 
-  // Route to Aura Lab
-  if (currentView === 'lab') {
-    return <AuraLab />;
-  }
-
-  // Core App Shell: Four elements, no sidebar
   return (
-    <div className="relative min-h-screen w-screen overflow-hidden bg-[var(--bg)] text-[var(--text)] flex flex-col font-sans select-none">
-      {/* 0) Reactive Monochrome Aura */}
+    <div
+      className="relative flex h-[100dvh] w-screen overflow-hidden"
+      style={{ background: 'var(--bg)', color: 'var(--text)' }}
+    >
+      {/* Reactive background layers */}
       <Aura />
+      <div className="nv-grid" aria-hidden />
 
-      {/* 1) Top Bar (48px, transparent, fades in on hover) */}
-      <TopBar />
+      <SideRail />
 
-      {/* 2) The Stage (Editorial document conversation) */}
-      <main className="relative z-10 flex-1 flex flex-col min-h-0 overflow-hidden">
-        <Stage />
-      </main>
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col">
+        <TopBar />
+        <main className="flex min-h-0 flex-1 flex-col">
+          <div className="relative flex min-h-0 flex-1 flex-col">
+            <Stage />
+            {/* Content fades into the instrument below rather than being cut */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-14"
+              style={{ background: 'linear-gradient(180deg, transparent, var(--bg) 82%)' }}
+            />
+          </div>
+          <Dock />
+        </main>
+      </div>
 
-      {/* 3) The Dock (Composer floating at bottom center) */}
-      <Dock />
-
-      {/* 4) The Timeline Rail (24px right strip with ticks) */}
       <TimelineRail />
 
-      {/* Index Overlay (⌘K) */}
+      {/* Overlays */}
       <IndexOverlay />
-
-      {/* Spaces & Chats Drawer Menu */}
       <SpacesMenu />
-
-      {/* Settings & Preferences Modal (Lists, Paragraphs, Code theme) */}
       <SettingsModal />
-
-      {/* Artifacts Sheet */}
       <ArtifactSheet />
-
-      {/* Onboarding Modal */}
       <OnboardingModal />
-
-      {/* Auth Modal */}
       <AuthModal />
     </div>
   );

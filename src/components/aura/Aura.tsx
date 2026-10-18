@@ -5,130 +5,95 @@ export type AuraState = 'idle' | 'typing' | 'thinking' | 'streaming' | 'error' |
 
 interface AuraProps {
   forcedState?: AuraState;
-  showDockBloom?: boolean;
 }
 
+/**
+ * The room's light source. A single scalar (--energy) is eased every frame and
+ * consumed by CSS to drive a faint monochrome bloom behind the interface.
+ */
 export const Aura: React.FC<AuraProps> = ({ forcedState }) => {
-  const { isStreaming, isThinking, streamingError, isTyping, typingRate, reduceEffects } = useChatStore();
+  const { isStreaming, isThinking, streamingError, isTyping, typingRate, reduceEffects } =
+    useChatStore();
 
-  const currentEnergyRef = useRef(0.25);
-  const targetEnergyRef = useRef(0.25);
-  const animFrameRef = useRef<number | null>(null);
-  const lastTimeRef = useRef<number>(performance.now());
-  const errorFlickerTimeoutRef = useRef<any>(null);
-  const errorTriggeredRef = useRef(false);
+  const current = useRef(0.25);
+  const target = useRef(0.25);
+  const frame = useRef<number | null>(null);
+  const last = useRef<number>(0);
+  const errorArmed = useRef(false);
 
-  // Compute state
-  const state: AuraState = forcedState || (
-    streamingError ? 'error' :
-    isThinking ? 'thinking' :
-    isStreaming ? 'streaming' :
-    isTyping ? 'typing' :
-    'idle'
-  );
+  const state: AuraState =
+    forcedState ||
+    (streamingError ? 'error' : isThinking ? 'thinking' : isStreaming ? 'streaming' : isTyping ? 'typing' : 'idle');
 
   useEffect(() => {
-    // Set html attribute for reduced effects
-    if (reduceEffects) {
-      document.documentElement.setAttribute('data-reduce-effects', 'true');
-    } else {
-      document.documentElement.removeAttribute('data-reduce-effects');
-    }
+    document.documentElement.toggleAttribute('data-reduce-effects', reduceEffects);
   }, [reduceEffects]);
 
   useEffect(() => {
     switch (state) {
-      case 'idle':
-        targetEnergyRef.current = 0.25;
-        errorTriggeredRef.current = false;
-        break;
       case 'typing':
-        const bonus = Math.min((typingRate || 1) * 0.05, 0.25);
-        targetEnergyRef.current = 0.45 + bonus;
+        target.current = 0.46 + Math.min((typingRate || 1) * 0.045, 0.22);
         break;
       case 'thinking':
-        targetEnergyRef.current = 0.70;
+        target.current = 0.72;
         break;
       case 'streaming':
-        targetEnergyRef.current = 0.85;
+        target.current = 0.88;
         break;
       case 'error':
-        if (!errorTriggeredRef.current) {
-          errorTriggeredRef.current = true;
-          targetEnergyRef.current = 0.95;
-          currentEnergyRef.current = 0.95;
-          errorFlickerTimeoutRef.current = setTimeout(() => {
-            targetEnergyRef.current = 0.25;
-          }, 180);
+        if (!errorArmed.current) {
+          errorArmed.current = true;
+          target.current = 1;
+          current.current = 1;
+          window.setTimeout(() => (target.current = 0.25), 190);
         }
         break;
-      case 'done':
-        targetEnergyRef.current = 0.25;
-        break;
+      default:
+        target.current = 0.25;
+        errorArmed.current = false;
     }
-
-    return () => {
-      if (errorFlickerTimeoutRef.current) clearTimeout(errorFlickerTimeoutRef.current);
-    };
   }, [state, typingRate]);
 
-  // Main animation loop: exponential smoothing of --energy
   useEffect(() => {
-    const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (isReducedMotion) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       document.documentElement.style.setProperty('--energy', '0.25');
       return;
     }
 
-    let isVisible = document.visibilityState === 'visible';
+    let visible = document.visibilityState === 'visible';
+    const onVis = () => (visible = document.visibilityState === 'visible');
+    document.addEventListener('visibilitychange', onVis);
 
-    const handleVisibilityChange = () => {
-      isVisible = document.visibilityState === 'visible';
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    last.current = performance.now();
 
-    const updateLoop = (now: number) => {
-      if (isVisible) {
-        const delta = Math.min((now - lastTimeRef.current) / 1000, 0.1);
-        lastTimeRef.current = now;
+    const tick = (now: number) => {
+      if (visible) {
+        const dt = Math.min((now - last.current) / 1000, 0.1);
+        last.current = now;
 
-        let effectiveTarget = targetEnergyRef.current;
-        if (state === 'idle') {
-          effectiveTarget = 0.25 + 0.04 * Math.sin((now / 6000) * Math.PI * 2);
-        } else if (state === 'thinking') {
-          effectiveTarget = 0.70 + 0.06 * Math.sin((now / 1500) * Math.PI * 2);
-        }
+        let goal = target.current;
+        if (state === 'idle') goal = 0.25 + 0.045 * Math.sin((now / 6200) * Math.PI * 2);
+        else if (state === 'thinking') goal = 0.72 + 0.06 * Math.sin((now / 1500) * Math.PI * 2);
 
-        const smoothingFactor = 1 - Math.exp(-5.5 * delta);
-        currentEnergyRef.current += (effectiveTarget - currentEnergyRef.current) * smoothingFactor;
-
-        document.documentElement.style.setProperty(
-          '--energy',
-          currentEnergyRef.current.toFixed(4)
-        );
+        current.current += (goal - current.current) * (1 - Math.exp(-5.5 * dt));
+        document.documentElement.style.setProperty('--energy', current.current.toFixed(4));
       } else {
-        lastTimeRef.current = now;
+        last.current = now;
       }
-
-      animFrameRef.current = requestAnimationFrame(updateLoop);
+      frame.current = requestAnimationFrame(tick);
     };
 
-    animFrameRef.current = requestAnimationFrame(updateLoop);
-
+    frame.current = requestAnimationFrame(tick);
     return () => {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (frame.current) cancelAnimationFrame(frame.current);
+      document.removeEventListener('visibilitychange', onVis);
     };
   }, [state]);
 
-  // Strictly NO background white gradient light - pure dark atmosphere
   return (
     <>
-      {/* Subtle corner vignette (pure black gradient at corners, never white) */}
-      <div className="aura-vignette pointer-events-none" aria-hidden="true" />
-
-      {/* Subtle monochrome noise texture */}
-      <div className="aura-grain pointer-events-none" aria-hidden="true" />
+      <div className="nv-vignette" aria-hidden />
+      <div className="nv-grain" aria-hidden />
     </>
   );
 };

@@ -271,7 +271,7 @@ By ensuring capacity is a power of two, index wrapping incurs a single \`AND\` i
     {
       title: 'Access',
       links: [
-        { label: 'Aura laboratory', href: '#cta' },
+        { label: 'Xylvanthrex Labs', href: '#cta' },
         { label: 'Begin a space', href: '#cta' },
         { label: 'Guided tour', href: '#demo' },
       ],

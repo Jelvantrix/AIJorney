@@ -9,6 +9,11 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
+        '@noevix/design-system': path.resolve(__dirname, 'packages/design-system/src'),
+        '@noevix/products': path.resolve(__dirname, 'packages/products/src'),
+        '@noevix/config': path.resolve(__dirname, 'packages/config/src'),
+        '@noevix/auth': path.resolve(__dirname, 'packages/auth/src'),
+        '@noevix/contracts': path.resolve(__dirname, 'packages/contracts'),
       },
     },
     server: {

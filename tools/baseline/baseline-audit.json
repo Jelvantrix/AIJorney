@@ -1,0 +1,52 @@
+{
+  "timestamp": "2026-10-19T12:23:00Z",
+  "project": "Noevix",
+  "baseline_commit": "5b1c93b",
+  "stack": {
+    "framework": "React 19 + TypeScript + Vite 8",
+    "server": "Express (Node.js 22)",
+    "styling": "Tailwind CSS v4 + Custom Tokens CSS",
+    "state": "Zustand 5",
+    "package_manager": "npm workspaces (10.9.9)"
+  },
+  "metrics": {
+    "initial_js_bundle_bytes": 975605,
+    "initial_css_bundle_bytes": 74690,
+    "initial_html_bytes": 2437
+  },
+  "tests": [
+    {
+      "name": "TypeScript Typecheck (npm run lint)",
+      "command": "tsc --noEmit",
+      "status": "PASS"
+    },
+    {
+      "name": "Monochrome Discipline Check (npm run check:monochrome)",
+      "command": "node scripts/check-monochrome.js",
+      "status": "FAIL",
+      "error": "Non-monochrome hex saturation on lines 186-187 of src/styles/tokens.css (#f7f7f8, #efeff1). Preserved as-is per C6 constraint and recorded in FOLLOWUPS.md."
+    }
+  ],
+  "visual_baselines": {
+    "viewports": [
+      { "name": "desktop", "width": 1440, "height": 900 },
+      { "name": "tablet", "width": 820, "height": 1180 },
+      { "name": "mobile", "width": 390, "height": 844 }
+    ],
+    "themes": ["dark", "light"],
+    "screens": [
+      "company_marketing_hero",
+      "company_marketing_features",
+      "company_marketing_comparison",
+      "company_marketing_faq",
+      "chatbot_empty_state",
+      "chatbot_typing_composer",
+      "chatbot_streaming_response",
+      "chatbot_finished_exchange",
+      "chatbot_index_overlay",
+      "chatbot_settings_modal",
+      "chatbot_auth_modal",
+      "chatbot_artifact_sheet"
+    ]
+  }
+}

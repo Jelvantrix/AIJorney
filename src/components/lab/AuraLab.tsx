@@ -95,7 +95,7 @@ export const AuraLab: React.FC = () => {
             <FlaskConical className="h-4 w-4" style={{ color: 'var(--text-2)' }} />
           </span>
           <div>
-            <div className="nv-display text-[19px] leading-none">Aura laboratory</div>
+            <div className="nv-display text-[19px] leading-none">Xylvanthrex Labs</div>
             <div className="nv-label mt-1 !text-[9px]">Isolated reactive backdrop testbed</div>
           </div>
         </div>

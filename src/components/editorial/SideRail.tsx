@@ -161,7 +161,7 @@ export const SideRail: React.FC = () => {
         />
         <RailButton
           icon={FlaskConical}
-          label="Aura lab"
+          label="Xylvanthrex Labs"
           onClick={() => setCurrentView('lab')}
         />
       </div>

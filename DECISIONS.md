@@ -70,3 +70,24 @@ This document records architectural, product, and implementation decisions made 
 - **Decision**: Apply an opacity 0 -> 1 and 3px blur -> 0 transition over 160ms strictly to the newest 12 words of incoming streaming text, leaving historical words completely static.
 - **Alternative Rejected**: Re-rendering or re-animating the whole message block on every token.
 - **Rationale**: Eliminates DOM layout thrashing, ensures smooth reading flow, and achieves first-token rendering within one frame.
+
+### D-009: Monorepo Topology & Package Separation
+- **Decision**: Structure the repository into `/apps/company`, `/apps/chat`, and `/packages/{design-system,products,config,contracts,auth}` using standard npm workspaces.
+- **Alternative Rejected**: Polyrepo across multiple Git repositories.
+- **Rationale**: Preserves rapid development, allows unified type checking across shared design system tokens and product contracts, and fits the single-port AI Studio preview environment requirements.
+
+### D-010: Product App Slug Choice (`chat`)
+- **Decision**: Designate `chat` as the primary product slug (`/apps/chat`, route `/chat` in unified development and standalone root `/` when deployed independently).
+- **Alternative Rejected**: `reasoning-instrument` or `app`.
+- **Rationale**: The existing codebase describes the reasoning client as chat ("Chat is one possible client of the mission system" in architecture brief). `chat` is the standard concise URL-safe slug.
+
+### D-011: Unified Port 3000 Development Server & Path-Based Local Routing
+- **Decision**: Keep the dev server running on port 3000 with unified Express middleware serving the Company website at `/`, `/products`, and `/products/chat`, while serving the standalone Chat product at `/chat` (with backend routes at `/v1` and `/api`), while allowing each app to build and bundle strictly isolated outputs.
+- **Alternative Rejected**: Running two simultaneous dev server ports (breaks single port 3000 AI Studio dev environment).
+- **Rationale**: AI Studio enforces a single dev server process on port 3000. This setup allows both independent production deploys and seamless local previewing.
+
+### D-012: Zero Marketing Leakage into Chatbot App
+- **Decision**: Strictly isolate `apps/chat` from company marketing copy, logos, or directory pages. Per Constraint C2, no cross-navigation back to the company site is inserted inside the chatbot UI.
+- **Alternative Rejected**: Adding a "Back to Noevix Home" top-bar button inside the chatbot.
+- **Rationale**: Constraint C2 explicitly forbids adding any new visible element, link, or button inside the chatbot UI.
+

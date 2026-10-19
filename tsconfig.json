@@ -19,6 +19,27 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@noevix/design-system": [
+        "./packages/design-system/src/index.ts"
+      ],
+      "@noevix/design-system/*": [
+        "./packages/design-system/src/*"
+      ],
+      "@noevix/products": [
+        "./packages/products/src/index.ts"
+      ],
+      "@noevix/config": [
+        "./packages/config/src/index.ts"
+      ],
+      "@noevix/auth": [
+        "./packages/auth/src/index.ts"
+      ],
+      "@noevix/contracts": [
+        "./packages/contracts/index.ts"
+      ],
+      "@noevix/contracts/*": [
+        "./packages/contracts/*"
       ]
     },
     "allowImportingTsExtensions": true,

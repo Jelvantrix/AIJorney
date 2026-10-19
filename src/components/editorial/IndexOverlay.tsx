@@ -116,10 +116,10 @@ export const IndexOverlay: React.FC = () => {
       {
         id: 'act:lab',
         kind: 'action',
-        title: 'Open the aura lab',
-        hint: 'Inspect the reactive backdrop',
+        title: 'Open Xylvanthrex Labs',
+        hint: 'Inspect reactive backdrop and inference profiles',
         icon: FlaskConical,
-        keywords: 'aura lab background effects',
+        keywords: 'xylvanthrex labs aura background effects',
         run: () => {
           setIndexOpen(false);
           setCurrentView('lab');

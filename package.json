@@ -1,14 +1,21 @@
 {
-  "name": "react-example",
+  "name": "noevix-monorepo",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "tsx server.ts",
     "start": "node server.ts",
     "build": "vite build",
+    "build:company": "npm run build --workspace=@noevix/app-company",
+    "build:chat": "npm run build --workspace=@noevix/app-chat",
+    "build:all": "npm run build:company && npm run build:chat",
     "preview": "vite preview",
-    "clean": "rm -rf dist server.js",
+    "clean": "rm -rf dist apps/company/dist apps/chat/dist server.js",
     "lint": "tsc --noEmit",
     "check:monochrome": "node scripts/check-monochrome.js"
   },

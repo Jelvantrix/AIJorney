@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MARKETING_COPY } from '../content/marketing.ts';
+import { MARKETING_COPY } from '../../content/marketing.ts';
 import { toggleTheme } from '@noevix/design-system';
 import {
   Activity,

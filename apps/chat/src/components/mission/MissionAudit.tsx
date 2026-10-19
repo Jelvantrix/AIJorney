@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MissionView } from '@noevix/contracts/mission.ts';
+import { MissionView } from '@noevix/contracts';
 import { useMissionStore } from '../../lib/missionStore.ts';
 import { Panel, Stat, KV, Tag, Dot, Empty, Table, Td, type Level } from './ui.tsx';
 

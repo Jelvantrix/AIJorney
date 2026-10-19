@@ -117,7 +117,7 @@ export const SideRail: React.FC = () => {
       {/* ── Top ─────────────────────────────────────────── */}
       <div className="flex flex-col items-center gap-2.5">
         <button
-          onClick={() => setCurrentView('app')}
+          onClick={() => setCurrentView('marketing')}
           aria-label="Noevix home"
           className="group relative mb-1 flex h-10 w-10 items-center justify-center rounded-[12px] transition-transform duration-300 hover:scale-[1.04] active:scale-95"
           style={{

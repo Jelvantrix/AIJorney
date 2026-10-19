@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MissionView, MissionEvent } from '../../../packages/contracts/mission.ts';
+import { MissionView, MissionEvent } from '@noevix/contracts';
 import { Panel, Dot, StateBadge, Tag, Empty, type Level } from './ui.tsx';
 
 interface MissionRunProps {

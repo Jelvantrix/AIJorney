@@ -1,4 +1,4 @@
-import { PublicLens, Message, Conversation, ArtifactEvent } from '../../packages/contracts/index.ts';
+import { PublicLens, Message, Conversation, ArtifactEvent } from '@noevix/contracts';
 
 export type WorkspaceTab = 'code' | 'document' | 'preview' | 'diff' | 'telemetry';
 

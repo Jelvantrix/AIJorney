@@ -13,7 +13,7 @@ import {
   DoneEvent,
   DoneEventSchema,
   PublicLens,
-} from '../../packages/contracts/index.ts';
+} from '@noevix/contracts';
 
 export interface SSECallbacks {
   onRoute?: (route: RouteEvent) => void;

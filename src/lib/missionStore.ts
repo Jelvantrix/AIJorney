@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { MissionView, MissionEvent, AuditReport } from '../../packages/contracts/mission.ts';
+import { MissionView, MissionEvent, AuditReport } from '@noevix/contracts';
 
 const API_BASE = typeof window !== 'undefined' ? (window as any).API_BASE || '' : '';
 

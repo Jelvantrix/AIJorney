@@ -200,7 +200,7 @@ export default function MissionControl() {
             missions.map((m) => {
               const active = m.id === activeMissionId;
               const tone = stateTone(m.state);
-              const steps = Object.values(m.steps);
+              const steps = Object.values(m.steps) as any[];
               return (
                 <button
                   key={m.id}

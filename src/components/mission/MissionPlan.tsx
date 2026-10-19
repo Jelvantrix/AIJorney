@@ -1,5 +1,5 @@
 import React from 'react';
-import { MissionView } from '../../../packages/contracts/mission.ts';
+import { MissionView } from '@noevix/contracts';
 import { Panel, Stat, StateBadge, Tag, Empty, Dot, Table, Td } from './ui.tsx';
 
 interface MissionPlanProps {

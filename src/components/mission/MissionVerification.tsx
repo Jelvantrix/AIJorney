@@ -1,5 +1,5 @@
 import React from 'react';
-import { MissionView } from '../../../packages/contracts/mission.ts';
+import { MissionView } from '@noevix/contracts';
 import { Panel, Stat, Tag, Empty, Dot, Table, Td, outcomeLevel, claimLevel, TEXT_TONE } from './ui.tsx';
 
 interface MissionVerificationProps {
